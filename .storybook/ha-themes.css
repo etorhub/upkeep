@@ -1,0 +1,37 @@
+/**
+ * Home Assistant theme CSS variables for Storybook.
+ * Matches HA light/dark theme variables used by Lovelace cards.
+ */
+
+:root,
+[data-theme='ha-light'] {
+  --primary-text-color: #212121;
+  --secondary-text-color: #727272;
+  --primary-color: #03a9f4;
+  --text-primary-color: #ffffff;
+  --card-background-color: #ffffff;
+  --ha-card-background: #ffffff;
+  --secondary-background-color: #f5f5f5;
+  --divider-color: #e0e0e0;
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --error-color: #f44336;
+  --ha-card-border-radius: 12px;
+  --ha-card-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='ha-dark'] {
+  --primary-text-color: #e1e1e1;
+  --secondary-text-color: #a0a0a0;
+  --primary-color: #03a9f4;
+  --text-primary-color: #ffffff;
+  --card-background-color: #1c1c1c;
+  --ha-card-background: #1c1c1c;
+  --secondary-background-color: #2d2d2d;
+  --divider-color: #404040;
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --error-color: #f44336;
+  --ha-card-border-radius: 12px;
+  --ha-card-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}

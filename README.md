@@ -215,7 +215,20 @@ npx lefthook install
 | `npm run typecheck`    | TypeScript check                               |
 | `npm run test`         | Run Vitest tests                               |
 | `npm run test:watch`   | Vitest watch mode                              |
+| `npm run storybook`    | Start Storybook dev server on `:6006`           |
+| `npm run build-storybook` | Build static Storybook                      |
+| `npm run test-storybook`  | Run Storybook test-runner (requires build)  |
 | `npm run commit`       | Interactive commit wizard (Commitizen)         |
+
+### Storybook (Development & Regression Testing)
+
+Storybook provides a sandbox for developing and styling the card without Home Assistant:
+
+```bash
+npm run storybook
+```
+
+Stories cover all view modes (grid, list, compact), progress types (ring, bar), config options, and light/dark themes. For regression testing, run `npm run build-storybook` then `npm run test-storybook` (requires [Playwright](https://playwright.dev/) browsers: `npx playwright install`).
 
 ### Local Testing in Home Assistant
 
