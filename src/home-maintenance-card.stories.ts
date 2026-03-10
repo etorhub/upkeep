@@ -96,6 +96,14 @@ export const List: Story = {
   },
 };
 
+export const ListBarProgress: Story = {
+  render: renderCard,
+  args: {
+    hass: mockHass,
+    config: { ...defaultConfig, view_mode: 'list', progress_type: 'bar' },
+  },
+};
+
 export const Compact: Story = {
   render: renderCard,
   args: {

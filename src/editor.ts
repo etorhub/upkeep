@@ -260,10 +260,12 @@ export class HomeMaintenanceCardEditor extends LitElement implements LovelaceCar
         grid-template-rows: 1fr;
       }
       .accordion__content {
-        overflow: visible;
+        min-height: 0;
+        overflow: hidden;
         padding: 0 16px;
       }
       .accordion--open .accordion__content {
+        overflow: visible;
         padding: 16px;
       }
     `;

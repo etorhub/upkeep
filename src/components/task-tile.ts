@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult, CSSResultGroup } from 'lit';
+import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { TaskData } from '../types';
@@ -74,17 +74,30 @@ export class TaskTile extends LitElement {
 
   private _renderList(color: string, daysText: string, isOverdue: boolean): TemplateResult {
     const { task } = this;
+    const isBarProgress = this.progressType === 'bar';
     return html`
-      <div class="tile list ${isOverdue ? 'overdue' : ''} ${this._done ? 'done-anim' : ''}">
-        <div class="icon-wrap list-icon" style="color: ${color}" @click=${this._showMoreInfo}>
-          <ha-icon .icon=${task.icon}></ha-icon>
+      <div
+        class="tile list ${isBarProgress ? 'list-bar' : ''} ${isOverdue ? 'overdue' : ''} ${this
+          ._done
+          ? 'done-anim'
+          : ''}"
+      >
+        <div class="list-row">
+          <div class="icon-wrap list-icon" style="color: ${color}" @click=${this._showMoreInfo}>
+            <ha-icon .icon=${task.icon}></ha-icon>
+          </div>
+          <div class="list-info" @click=${this._showMoreInfo}>
+            <div class="name">${task.name}</div>
+            <div class="due" style="color: ${color}">${daysText}</div>
+          </div>
+          ${!isBarProgress
+            ? html`<div class="list-progress">${this._renderProgress(color)}</div>`
+            : nothing}
+          <div class="list-action">${this._renderDoneButton()}</div>
         </div>
-        <div class="list-info" @click=${this._showMoreInfo}>
-          <div class="name">${task.name}</div>
-          <div class="due" style="color: ${color}">${daysText}</div>
-        </div>
-        <div class="list-progress">${this._renderProgress(color)}</div>
-        <div class="list-action">${this._renderDoneButton()}</div>
+        ${isBarProgress
+          ? html`<div class="list-bar-footer">${this._renderProgress(color)}</div>`
+          : nothing}
       </div>
     `;
   }
@@ -200,14 +213,34 @@ export class TaskTile extends LitElement {
       /* List tile */
       .tile.list {
         display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 16px;
+        flex-direction: column;
+        gap: 0;
+        padding: 0;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
         transition: background 0.15s ease;
       }
       .tile.list:hover {
         background: var(--secondary-background-color);
+      }
+      .tile.list .list-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+      }
+      .tile.list.list-bar .list-row {
+        padding-bottom: 8px;
+      }
+      .tile.list .list-bar-footer {
+        padding: 0 16px 12px 16px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .tile.list .list-bar-footer .bar-wrap {
+        padding: 0;
+      }
+      .tile.list .list-bar-footer .bar-track {
+        height: 8px;
       }
       .list-info {
         flex: 1;
