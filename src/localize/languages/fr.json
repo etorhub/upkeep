@@ -1,0 +1,46 @@
+{
+  "common": {
+    "version": "Version",
+    "invalid_configuration": "Configuration invalide"
+  },
+  "card": {
+    "title": "Entretien de la maison",
+    "overdue": "En retard",
+    "due_soon": "Bientôt due",
+    "on_track": "À jour",
+    "mark_done": "Terminé",
+    "confirm_done": "Marquer cette tâche comme terminée ?",
+    "no_tasks": "Aucune tâche d'entretien trouvée",
+    "days_left": "{count} {unit} restant(s)",
+    "days_overdue": "{count} {unit} en retard",
+    "today": "Échéance aujourd'hui",
+    "last_performed": "Dernière fois",
+    "next_due": "Prochaine fois",
+    "every": "Tous les {value} {type}"
+  },
+  "editor": {
+    "general": "Général",
+    "entities": "Entités",
+    "display": "Affichage",
+    "features": "Fonctionnalités",
+    "title": "Titre",
+    "view_mode": "Mode d'affichage",
+    "progress_type": "Type de progression",
+    "sort_by": "Trier par",
+    "filter": "Filtrer",
+    "columns": "Colonnes",
+    "due_soon_days": "Seuil de prochaine (jours)",
+    "show_header": "Afficher le résumé",
+    "show_filter_bar": "Afficher la barre de filtres",
+    "grid": "Grille",
+    "list": "Liste",
+    "compact": "Compact",
+    "ring": "Anneau",
+    "bar": "Barre",
+    "urgency": "Urgence",
+    "name": "Nom",
+    "due_date": "Date d'échéance",
+    "all": "Toutes",
+    "auto_discover": "Découverte automatique des entités"
+  }
+}

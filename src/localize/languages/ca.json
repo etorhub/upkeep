@@ -1,0 +1,46 @@
+{
+  "common": {
+    "version": "Versió",
+    "invalid_configuration": "Configuració invàlida"
+  },
+  "card": {
+    "title": "Manteniments",
+    "overdue": "Vençuda",
+    "due_soon": "Propera",
+    "on_track": "Al dia",
+    "mark_done": "Fet",
+    "confirm_done": "Marcar aquesta tasca com a feta?",
+    "no_tasks": "No s'han trobat tasques de manteniment",
+    "days_left": "{count} {unit} restants",
+    "days_overdue": "{count} {unit} de retard",
+    "today": "Venç avui",
+    "last_performed": "Última vegada",
+    "next_due": "Propera vegada",
+    "every": "Cada {value} {type}"
+  },
+  "editor": {
+    "general": "General",
+    "entities": "Entitats",
+    "display": "Visualització",
+    "features": "Funcions",
+    "title": "Títol",
+    "view_mode": "Mode de vista",
+    "progress_type": "Tipus de progrés",
+    "sort_by": "Ordenar per",
+    "filter": "Filtrar",
+    "columns": "Columnes",
+    "due_soon_days": "Llindar de propera (dies)",
+    "show_header": "Mostrar resum",
+    "show_filter_bar": "Mostrar barra de filtres",
+    "grid": "Quadrícula",
+    "list": "Llista",
+    "compact": "Compacte",
+    "ring": "Anell",
+    "bar": "Barra",
+    "urgency": "Urgència",
+    "name": "Nom",
+    "due_date": "Data de venciment",
+    "all": "Totes",
+    "auto_discover": "Auto-descobrir entitats"
+  }
+}

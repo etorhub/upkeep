@@ -1,0 +1,46 @@
+{
+  "common": {
+    "version": "Versie",
+    "invalid_configuration": "Ongeldige configuratie"
+  },
+  "card": {
+    "title": "Huisonderhoud",
+    "overdue": "Verlopen",
+    "due_soon": "Binnenkort",
+    "on_track": "Op schema",
+    "mark_done": "Gereed",
+    "confirm_done": "Deze taak als voltooid markeren?",
+    "no_tasks": "Geen onderhoudstaken gevonden",
+    "days_left": "{count} {unit} over",
+    "days_overdue": "{count} {unit} verlopen",
+    "today": "Vandaag verschuldigd",
+    "last_performed": "Laatst uitgevoerd",
+    "next_due": "Volgende keer",
+    "every": "Elke {value} {type}"
+  },
+  "editor": {
+    "general": "Algemeen",
+    "entities": "Entiteiten",
+    "display": "Weergave",
+    "features": "Functies",
+    "title": "Titel",
+    "view_mode": "Weergavemodus",
+    "progress_type": "Voortgangstype",
+    "sort_by": "Sorteren op",
+    "filter": "Filter",
+    "columns": "Kolommen",
+    "due_soon_days": "Drempel binnenkort (dagen)",
+    "show_header": "Samenvatting tonen",
+    "show_filter_bar": "Filterbalk tonen",
+    "grid": "Raster",
+    "list": "Lijst",
+    "compact": "Compact",
+    "ring": "Ring",
+    "bar": "Balk",
+    "urgency": "Urgentie",
+    "name": "Naam",
+    "due_date": "Vervaldatum",
+    "all": "Alle",
+    "auto_discover": "Entiteiten automatisch ontdekken"
+  }
+}

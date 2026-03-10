@@ -1,0 +1,46 @@
+{
+  "common": {
+    "version": "Versione",
+    "invalid_configuration": "Configurazione non valida"
+  },
+  "card": {
+    "title": "Manutenzione della casa",
+    "overdue": "Scaduta",
+    "due_soon": "In scadenza",
+    "on_track": "In regola",
+    "mark_done": "Completato",
+    "confirm_done": "Segnare questa attività come completata?",
+    "no_tasks": "Nessuna attività di manutenzione trovata",
+    "days_left": "{count} {unit} rimanenti",
+    "days_overdue": "{count} {unit} in ritardo",
+    "today": "Scade oggi",
+    "last_performed": "Ultima volta",
+    "next_due": "Prossima scadenza",
+    "every": "Ogni {value} {type}"
+  },
+  "editor": {
+    "general": "Generale",
+    "entities": "Entità",
+    "display": "Visualizzazione",
+    "features": "Funzionalità",
+    "title": "Titolo",
+    "view_mode": "Modalità visualizzazione",
+    "progress_type": "Tipo di progresso",
+    "sort_by": "Ordina per",
+    "filter": "Filtra",
+    "columns": "Colonne",
+    "due_soon_days": "Soglia prossima (giorni)",
+    "show_header": "Mostra riepilogo",
+    "show_filter_bar": "Mostra barra filtri",
+    "grid": "Griglia",
+    "list": "Elenco",
+    "compact": "Compatto",
+    "ring": "Anello",
+    "bar": "Barra",
+    "urgency": "Urgenza",
+    "name": "Nome",
+    "due_date": "Data di scadenza",
+    "all": "Tutte",
+    "auto_discover": "Scopri automaticamente le entità"
+  }
+}

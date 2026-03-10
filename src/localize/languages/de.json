@@ -1,0 +1,46 @@
+{
+  "common": {
+    "version": "Version",
+    "invalid_configuration": "Ungültige Konfiguration"
+  },
+  "card": {
+    "title": "Hauswartung",
+    "overdue": "Überfällig",
+    "due_soon": "Demnächst fällig",
+    "on_track": "Im Plan",
+    "mark_done": "Erledigt",
+    "confirm_done": "Diese Aufgabe als erledigt markieren?",
+    "no_tasks": "Keine Wartungsaufgaben gefunden",
+    "days_left": "{count} {unit} übrig",
+    "days_overdue": "{count} {unit} überfällig",
+    "today": "Heute fällig",
+    "last_performed": "Zuletzt durchgeführt",
+    "next_due": "Nächste Fälligkeit",
+    "every": "Alle {value} {type}"
+  },
+  "editor": {
+    "general": "Allgemein",
+    "entities": "Entitäten",
+    "display": "Anzeige",
+    "features": "Funktionen",
+    "title": "Titel",
+    "view_mode": "Ansichtsmodus",
+    "progress_type": "Fortschrittstyp",
+    "sort_by": "Sortieren nach",
+    "filter": "Filter",
+    "columns": "Spalten",
+    "due_soon_days": "Schwellenwert für demnächst (Tage)",
+    "show_header": "Zusammenfassung anzeigen",
+    "show_filter_bar": "Filterleiste anzeigen",
+    "grid": "Raster",
+    "list": "Liste",
+    "compact": "Kompakt",
+    "ring": "Ring",
+    "bar": "Balken",
+    "urgency": "Dringlichkeit",
+    "name": "Name",
+    "due_date": "Fälligkeitsdatum",
+    "all": "Alle",
+    "auto_discover": "Entitäten automatisch erkennen"
+  }
+}

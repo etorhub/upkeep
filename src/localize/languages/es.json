@@ -1,0 +1,46 @@
+{
+  "common": {
+    "version": "Versión",
+    "invalid_configuration": "Configuración inválida"
+  },
+  "card": {
+    "title": "Mantenimiento del hogar",
+    "overdue": "Vencida",
+    "due_soon": "Próxima",
+    "on_track": "Al día",
+    "mark_done": "Hecho",
+    "confirm_done": "¿Marcar esta tarea como hecha?",
+    "no_tasks": "No se encontraron tareas de mantenimiento",
+    "days_left": "{count} {unit} restantes",
+    "days_overdue": "{count} {unit} de retraso",
+    "today": "Vence hoy",
+    "last_performed": "Última vez",
+    "next_due": "Próxima vez",
+    "every": "Cada {value} {type}"
+  },
+  "editor": {
+    "general": "General",
+    "entities": "Entidades",
+    "display": "Visualización",
+    "features": "Funciones",
+    "title": "Título",
+    "view_mode": "Modo de vista",
+    "progress_type": "Tipo de progreso",
+    "sort_by": "Ordenar por",
+    "filter": "Filtrar",
+    "columns": "Columnas",
+    "due_soon_days": "Umbral de próxima (días)",
+    "show_header": "Mostrar resumen",
+    "show_filter_bar": "Mostrar barra de filtros",
+    "grid": "Cuadrícula",
+    "list": "Lista",
+    "compact": "Compacto",
+    "ring": "Anillo",
+    "bar": "Barra",
+    "urgency": "Urgencia",
+    "name": "Nombre",
+    "due_date": "Fecha de vencimiento",
+    "all": "Todas",
+    "auto_discover": "Auto-descubrir entidades"
+  }
+}
