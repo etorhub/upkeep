@@ -1,0 +1,59 @@
+{
+  "name": "home-maintenance-card",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "A custom Lovelace card for the Home Maintenance integration — visual progress tracking, auto-discovery, and one-tap task completion.",
+  "keywords": [
+    "home-assistant",
+    "homeassistant",
+    "hass",
+    "lovelace",
+    "custom-cards",
+    "hacs",
+    "maintenance"
+  ],
+  "module": "home-maintenance-card.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/home-maintenance-card"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "custom-card-helpers": "^2.0.0",
+    "home-assistant-js-websocket": "^9.6.0",
+    "lit": "^3.3.2"
+  },
+  "devDependencies": {
+    "@open-wc/testing": "^4.0.0",
+    "@rollup/plugin-commonjs": "^26.0.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.0",
+    "@testing-library/dom": "^10.4.0",
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^10.0.0",
+    "globals": "^15.12.0",
+    "jsdom": "^25.0.1",
+    "lefthook": "^1.7.0",
+    "prettier": "^3.3.3",
+    "rollup": "^4.20.0",
+    "rollup-plugin-serve": "^1.1.1",
+    "tslib": "^2.6.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.15.0",
+    "vitest": "^2.1.0"
+  },
+  "scripts": {
+    "start": "rollup -c rollup.config.dev.js --watch",
+    "build": "npm run clean && rollup -c",
+    "clean": "rm -rf dist",
+    "lint": "eslint src tests",
+    "lint:fix": "eslint src tests --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  }
+}

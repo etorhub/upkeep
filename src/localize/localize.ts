@@ -20,7 +20,7 @@ function getNestedValue(obj: unknown, path: string): string | undefined {
 }
 
 export function localize(key: string, search?: string, replace?: string): string {
-  let lang = (localStorage.getItem('selectedLanguage') || 'en')
+  const lang = (localStorage.getItem('selectedLanguage') || 'en')
     .replace(/['"]+/g, '')
     .replace('-', '_');
 

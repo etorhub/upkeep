@@ -26,7 +26,9 @@ export class TaskTile extends LitElement {
     });
     this._confirming = false;
     this._done = true;
-    setTimeout(() => { this._done = false; }, 1500);
+    setTimeout(() => {
+      this._done = false;
+    }, 1500);
   }
 
   private _cancelConfirm(): void {
@@ -65,9 +67,7 @@ export class TaskTile extends LitElement {
           <div class="name">${task.name}</div>
           <div class="due" style="color: ${color}">${daysText}</div>
         </div>
-        <div class="tile-actions">
-          ${this._renderDoneButton()}
-        </div>
+        <div class="tile-actions">${this._renderDoneButton()}</div>
       </div>
     `;
   }
@@ -83,12 +83,8 @@ export class TaskTile extends LitElement {
           <div class="name">${task.name}</div>
           <div class="due" style="color: ${color}">${daysText}</div>
         </div>
-        <div class="list-progress">
-          ${this._renderProgress(color)}
-        </div>
-        <div class="list-action">
-          ${this._renderDoneButton()}
-        </div>
+        <div class="list-progress">${this._renderProgress(color)}</div>
+        <div class="list-action">${this._renderDoneButton()}</div>
       </div>
     `;
   }
@@ -96,7 +92,10 @@ export class TaskTile extends LitElement {
   private _renderCompact(color: string, _daysText: string, isOverdue: boolean): TemplateResult {
     const { task } = this;
     return html`
-      <div class="tile compact ${isOverdue ? 'overdue' : ''} ${this._done ? 'done-anim' : ''}" @click=${this._showMoreInfo}>
+      <div
+        class="tile compact ${isOverdue ? 'overdue' : ''} ${this._done ? 'done-anim' : ''}"
+        @click=${this._showMoreInfo}
+      >
         <div class="icon-wrap compact-icon" style="color: ${color}">
           <ha-icon .icon=${task.icon}></ha-icon>
         </div>
@@ -150,15 +149,15 @@ export class TaskTile extends LitElement {
     }
 
     return html`
-      <button class="btn btn-done" @click=${this._handleDone}>
-        ${localize('card.mark_done')}
-      </button>
+      <button class="btn btn-done" @click=${this._handleDone}>${localize('card.mark_done')}</button>
     `;
   }
 
   static get styles(): CSSResultGroup {
     return css`
-      :host { display: block; }
+      :host {
+        display: block;
+      }
 
       /* Grid tile */
       .tile.grid {
@@ -170,12 +169,15 @@ export class TaskTile extends LitElement {
         align-items: center;
         gap: 8px;
         border: 1px solid var(--divider-color, #e0e0e0);
-        transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+        transition:
+          box-shadow 0.2s ease,
+          transform 0.2s ease,
+          border-color 0.2s ease;
         position: relative;
         overflow: hidden;
       }
       .tile.grid:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         transform: translateY(-2px);
       }
       .tile-top {
@@ -288,7 +290,9 @@ export class TaskTile extends LitElement {
       .bar-fill {
         height: 100%;
         border-radius: 4px;
-        transition: width 0.6s ease, background 0.3s ease;
+        transition:
+          width 0.6s ease,
+          background 0.3s ease;
       }
 
       /* Buttons */
@@ -320,7 +324,8 @@ export class TaskTile extends LitElement {
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
       }
-      .btn-confirm ha-icon, .btn-cancel ha-icon {
+      .btn-confirm ha-icon,
+      .btn-cancel ha-icon {
         --mdc-icon-size: 16px;
       }
       .confirm-row {
@@ -348,19 +353,40 @@ export class TaskTile extends LitElement {
       }
 
       @keyframes overduePulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
-        50% { box-shadow: 0 0 12px 2px rgba(244, 67, 54, 0.2); }
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+        }
+        50% {
+          box-shadow: 0 0 12px 2px rgba(244, 67, 54, 0.2);
+        }
       }
       @keyframes popIn {
-        0% { transform: scale(0); opacity: 0; }
-        70% { transform: scale(1.2); }
-        100% { transform: scale(1); opacity: 1; }
+        0% {
+          transform: scale(0);
+          opacity: 0;
+        }
+        70% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
       }
       @keyframes donePop {
-        0% { transform: scale(1); }
-        30% { transform: scale(0.97); }
-        60% { transform: scale(1.02); }
-        100% { transform: scale(1); }
+        0% {
+          transform: scale(1);
+        }
+        30% {
+          transform: scale(0.97);
+        }
+        60% {
+          transform: scale(1.02);
+        }
+        100% {
+          transform: scale(1);
+        }
       }
     `;
   }

@@ -1,0 +1,46 @@
+{
+  "common": {
+    "version": "Version",
+    "invalid_configuration": "Invalid configuration"
+  },
+  "card": {
+    "title": "Home Maintenance",
+    "overdue": "Overdue",
+    "due_soon": "Due soon",
+    "on_track": "On track",
+    "mark_done": "Done",
+    "confirm_done": "Mark this task as done?",
+    "no_tasks": "No maintenance tasks found",
+    "days_left": "{count} {unit} left",
+    "days_overdue": "{count} {unit} overdue",
+    "today": "Due today",
+    "last_performed": "Last performed",
+    "next_due": "Next due",
+    "every": "Every {value} {type}"
+  },
+  "editor": {
+    "general": "General",
+    "entities": "Entities",
+    "display": "Display",
+    "features": "Features",
+    "title": "Title",
+    "view_mode": "View mode",
+    "progress_type": "Progress type",
+    "sort_by": "Sort by",
+    "filter": "Filter",
+    "columns": "Columns",
+    "due_soon_days": "Due soon threshold (days)",
+    "show_header": "Show summary header",
+    "show_filter_bar": "Show filter bar",
+    "grid": "Grid",
+    "list": "List",
+    "compact": "Compact",
+    "ring": "Ring",
+    "bar": "Bar",
+    "urgency": "Urgency",
+    "name": "Name",
+    "due_date": "Due date",
+    "all": "All",
+    "auto_discover": "Auto-discover entities"
+  }
+}
