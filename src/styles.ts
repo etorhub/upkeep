@@ -51,11 +51,14 @@ export const cardStyles = css`
     color: var(--text-primary-color, #fff);
   }
 
-  /* Grid layout */
+  /* Grid layout - min() ensures media queries override config columns */
   .task-grid {
     display: grid;
-    grid-template-columns: repeat(var(--hm-grid-columns), 1fr);
+    grid-template-columns: repeat(min(var(--hm-grid-columns), var(--hm-max-columns, 99)), 1fr);
     gap: 12px;
+  }
+  .task-grid > * {
+    min-width: 0; /* Allow grid items to shrink below content size */
   }
 
   /* List layout */
@@ -107,15 +110,15 @@ export const cardStyles = css`
     animation: shimmer 1.5s ease-in-out infinite;
   }
 
-  /* Responsive */
+  /* Responsive - --hm-max-columns caps config columns at viewport breakpoints */
   @media (max-width: 900px) {
     :host {
-      --hm-grid-columns: 2;
+      --hm-max-columns: 2;
     }
   }
   @media (max-width: 500px) {
     :host {
-      --hm-grid-columns: 1;
+      --hm-max-columns: 1;
     }
     .card-content {
       padding: 12px;
