@@ -2,17 +2,20 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+      - master
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -22,8 +25,7 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/home-maintenance-card.js
-          generate_release_notes: true
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release

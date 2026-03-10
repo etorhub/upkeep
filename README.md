@@ -81,6 +81,14 @@ If the resource is not auto-loaded, add it manually:
 
 ## Integration with Home Assistant & HACS
 
+### HACS Category: Plugin (Frontend)
+
+This is a **Plugin** (Frontend/Dashboard), not an Integration or Template:
+
+- **Plugin** — Lovelace custom cards (JavaScript UI). Add via HACS → Frontend.
+- **Integration** — Python custom components (backend entities, services).
+- **Template** — Jinja2 templates for `custom_templates/`.
+
 ### HACS Plugin Structure
 
 This project follows the standard HACS Lovelace plugin layout:
@@ -116,6 +124,14 @@ home-maintenance-card/
 - **name** — Display name in HACS.
 - **render_readme** — Show README in HACS UI.
 - **filename** — JS file to load (from `dist/` in releases).
+
+### Release workflow
+
+Releases are created automatically on every push to `main` using [semantic-release](https://github.com/semantic-release/semantic-release). Use [Conventional Commits](https://www.conventionalcommits.org/) for release notes:
+
+- `feat:` → minor version bump (e.g. 1.1.0)
+- `fix:`, `docs:`, `chore:`, etc. → patch bump (e.g. 1.0.1)
+- `BREAKING CHANGE:` in footer → major bump (e.g. 2.0.0)
 
 ### Adding to HACS Default Store
 
@@ -199,6 +215,7 @@ npx lefthook install
 | `npm run typecheck`    | TypeScript check                               |
 | `npm run test`         | Run Vitest tests                               |
 | `npm run test:watch`   | Vitest watch mode                              |
+| `npm run commit`       | Interactive commit wizard (Commitizen)         |
 
 ### Local Testing in Home Assistant
 
@@ -210,8 +227,13 @@ npx lefthook install
 
 ### Git Hooks (Lefthook)
 
-- **pre-commit:** lint, typecheck, test, format check
+- **commit-msg:** Validates commit message format (Conventional Commits)
+- **pre-commit:** lint, typecheck, test, format check, build and stage dist
 - **pre-push:** full build
+
+**Commit format:** All commits must use [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `docs:`). Use `npm run commit` for an interactive wizard.
+
+**Note:** The pre-commit hook runs `npm run build` and stages `dist/home-maintenance-card.js`, so the built file is included in every commit automatically.
 
 ```bash
 npx lefthook install   # Install hooks
@@ -231,7 +253,7 @@ Contributions are welcome. Please:
    - `npm run typecheck` passes
    - `npm run test` passes
    - `npm run format:check` passes
-4. **Commit** with clear messages (`git commit -m "Add feature X"`).
+4. **Commit** with conventional format (`npm run commit` or `git commit -m "feat: add feature X"`).
 5. **Push** to your fork (`git push origin feature/your-feature`).
 6. Open a **Pull Request** against `main`.
 

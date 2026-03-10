@@ -1,4 +1,6 @@
 node_modules/
-dist/
+# Ignore dist contents except the built card (HACS needs it on default branch)
+dist/*
+!dist/home-maintenance-card.js
 .DS_Store
 *.log

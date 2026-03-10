@@ -1,3 +1,8 @@
+commit-msg:
+  commands:
+    commitlint:
+      run: npx commitlint --edit $1
+
 pre-commit:
   parallel: true
   commands:
@@ -11,6 +16,8 @@ pre-commit:
     format:
       glob: "*.{ts,js,json,md}"
       run: npm run format:check
+    build-and-stage:
+      run: npm run build && git add dist/home-maintenance-card.js
   skip:
     - merge
     - rebase
