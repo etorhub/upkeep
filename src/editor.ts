@@ -39,29 +39,27 @@ export class HomeMaintenanceCardEditor extends LitElement implements LovelaceCar
       ></ha-textfield>
 
       <ha-select
-        naturalMenuWidth
         .label=${localize('editor.view_mode')}
         .value=${c.view_mode ?? DEFAULTS.view_mode}
         .configValue=${'view_mode'}
-        @selected=${this._valueChanged}
-        @closed=${(e: Event) => e.stopPropagation()}
-      >
-        <mwc-list-item value="grid">${localize('editor.grid')}</mwc-list-item>
-        <mwc-list-item value="list">${localize('editor.list')}</mwc-list-item>
-        <mwc-list-item value="compact">${localize('editor.compact')}</mwc-list-item>
-      </ha-select>
+        .options=${[
+          { value: 'grid', label: localize('editor.grid') },
+          { value: 'list', label: localize('editor.list') },
+          { value: 'compact', label: localize('editor.compact') },
+        ]}
+        @selected=${this._selectChanged}
+      ></ha-select>
 
       <ha-select
-        naturalMenuWidth
         .label=${localize('editor.progress_type')}
         .value=${c.progress_type ?? DEFAULTS.progress_type}
         .configValue=${'progress_type'}
-        @selected=${this._valueChanged}
-        @closed=${(e: Event) => e.stopPropagation()}
-      >
-        <mwc-list-item value="ring">${localize('editor.ring')}</mwc-list-item>
-        <mwc-list-item value="bar">${localize('editor.bar')}</mwc-list-item>
-      </ha-select>
+        .options=${[
+          { value: 'ring', label: localize('editor.ring') },
+          { value: 'bar', label: localize('editor.bar') },
+        ]}
+        @selected=${this._selectChanged}
+      ></ha-select>
     `;
   }
 
@@ -77,31 +75,29 @@ export class HomeMaintenanceCardEditor extends LitElement implements LovelaceCar
     const c = this._config!;
     return html`
       <ha-select
-        naturalMenuWidth
         .label=${localize('editor.sort_by')}
         .value=${c.sort_by ?? DEFAULTS.sort_by}
         .configValue=${'sort_by'}
-        @selected=${this._valueChanged}
-        @closed=${(e: Event) => e.stopPropagation()}
-      >
-        <mwc-list-item value="urgency">${localize('editor.urgency')}</mwc-list-item>
-        <mwc-list-item value="name">${localize('editor.name')}</mwc-list-item>
-        <mwc-list-item value="due_date">${localize('editor.due_date')}</mwc-list-item>
-      </ha-select>
+        .options=${[
+          { value: 'urgency', label: localize('editor.urgency') },
+          { value: 'name', label: localize('editor.name') },
+          { value: 'due_date', label: localize('editor.due_date') },
+        ]}
+        @selected=${this._selectChanged}
+      ></ha-select>
 
       <ha-select
-        naturalMenuWidth
         .label=${localize('editor.filter')}
         .value=${c.filter ?? DEFAULTS.filter}
         .configValue=${'filter'}
-        @selected=${this._valueChanged}
-        @closed=${(e: Event) => e.stopPropagation()}
-      >
-        <mwc-list-item value="all">${localize('editor.all')}</mwc-list-item>
-        <mwc-list-item value="overdue">${localize('card.overdue')}</mwc-list-item>
-        <mwc-list-item value="due_soon">${localize('card.due_soon')}</mwc-list-item>
-        <mwc-list-item value="on_track">${localize('card.on_track')}</mwc-list-item>
-      </ha-select>
+        .options=${[
+          { value: 'all', label: localize('editor.all') },
+          { value: 'overdue', label: localize('card.overdue') },
+          { value: 'due_soon', label: localize('card.due_soon') },
+          { value: 'on_track', label: localize('card.on_track') },
+        ]}
+        @selected=${this._selectChanged}
+      ></ha-select>
 
       <ha-textfield
         .label=${localize('editor.columns')}
@@ -172,34 +168,47 @@ export class HomeMaintenanceCardEditor extends LitElement implements LovelaceCar
 
   /* ── Change handlers ──────────────────────────────────── */
 
+  private _selectChanged(ev: CustomEvent<{ value?: string }>): void {
+    if (!this._config) return;
+    const target = ev.target as HTMLElement & { configValue?: string };
+    const key = target.configValue;
+    if (!key) return;
+    const val = ev.detail?.value;
+    if (val === undefined) return;
+    if ((this._config as Record<string, unknown>)[key] === val) return;
+    this._config = { ...this._config, [key]: val === '' ? undefined : val };
+    fireEvent(this, 'config-changed', { config: this._config });
+  }
+
   private _valueChanged(ev: Event): void {
     if (!this._config) return;
-    const target = ev.target as any;
-    const key = target.configValue as string;
+    const target = ev.target as HTMLInputElement & { configValue?: string };
+    const key = target.configValue;
     if (!key) return;
-    // ha-select fires 'selected' with value in ev.detail; ha-textfield uses target.value
-    const val = (ev as CustomEvent<{ value?: string }>).detail?.value ?? target.value;
-    if ((this._config as any)[key] === val) return;
+    const val = target.value;
+    if ((this._config as Record<string, unknown>)[key] === val) return;
     this._config = { ...this._config, [key]: val === '' ? undefined : val };
     fireEvent(this, 'config-changed', { config: this._config });
   }
 
   private _numChanged(ev: Event): void {
     if (!this._config) return;
-    const target = ev.target as any;
-    const key = target.configValue as string;
+    const target = ev.target as HTMLInputElement & { configValue?: string };
+    const key = target.configValue;
     if (!key) return;
     const num = parseInt(target.value, 10);
     if (isNaN(num)) return;
+    if ((this._config as Record<string, unknown>)[key] === num) return;
     this._config = { ...this._config, [key]: num };
     fireEvent(this, 'config-changed', { config: this._config });
   }
 
   private _boolChanged(ev: Event): void {
     if (!this._config) return;
-    const target = ev.target as any;
-    const key = target.configValue as string;
+    const target = ev.target as HTMLInputElement & { configValue?: string; checked?: boolean };
+    const key = target.configValue;
     if (!key) return;
+    if ((this._config as Record<string, unknown>)[key] === target.checked) return;
     this._config = { ...this._config, [key]: target.checked };
     fireEvent(this, 'config-changed', { config: this._config });
   }
@@ -219,7 +228,7 @@ export class HomeMaintenanceCardEditor extends LitElement implements LovelaceCar
         border: 1px solid var(--divider-color);
         border-radius: 8px;
         margin-bottom: 8px;
-        overflow: hidden;
+        /* overflow: visible so ha-select dropdowns are not clipped */
       }
       .accordion__header {
         display: flex;
@@ -251,7 +260,7 @@ export class HomeMaintenanceCardEditor extends LitElement implements LovelaceCar
         grid-template-rows: 1fr;
       }
       .accordion__content {
-        overflow: hidden;
+        overflow: visible;
         padding: 0 16px;
       }
       .accordion--open .accordion__content {
