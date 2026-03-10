@@ -2,7 +2,7 @@
 
 A custom [Home Assistant](https://www.home-assistant.io/) Lovelace card for the [Home Maintenance](https://github.com/TJPoorman/home_maintenance) integration. Displays all your recurring maintenance tasks in a beautiful grid with circular progress rings, color-coded urgency, and one-tap task completion.
 
-[![Open your Home Assistant instance and show the add repository dialog for this repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=YOUR_GITHUB_USERNAME&repository=home-maintenance-card&category=plugin)
+[![Open your Home Assistant instance and show the add repository dialog for this repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=etorhub&repository=home-maintenance-card&category=plugin)
 
 ---
 
@@ -17,14 +17,14 @@ A custom [Home Assistant](https://www.home-assistant.io/) Lovelace card for the 
 ![Home Assistant](https://img.shields.io/badge/Home_Assistant-Lovelace-41BDF5?logo=home-assistant&logoColor=white)
 ![HACS](https://img.shields.io/badge/HACS-Plugin-41BDF5)
 
-| Layer | Technology |
-|-------|------------|
-| **UI** | [Lit](https://lit.dev/) (Web Components) |
-| **Build** | [Rollup](https://rollupjs.org/) |
-| **Language** | [TypeScript](https://www.typescriptlang.org/) |
-| **Testing** | [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) |
-| **Linting** | [ESLint](https://eslint.org/) + [Prettier](https://prettier.io/) |
-| **Git Hooks** | [Lefthook](https://github.com/evilmartians/lefthook) |
+| Layer            | Technology                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **UI**           | [Lit](https://lit.dev/) (Web Components)                                                                                                                                 |
+| **Build**        | [Rollup](https://rollupjs.org/)                                                                                                                                          |
+| **Language**     | [TypeScript](https://www.typescriptlang.org/)                                                                                                                            |
+| **Testing**      | [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)                                                                                          |
+| **Linting**      | [ESLint](https://eslint.org/) + [Prettier](https://prettier.io/)                                                                                                         |
+| **Git Hooks**    | [Lefthook](https://github.com/evilmartians/lefthook)                                                                                                                     |
 | **Dependencies** | [custom-card-helpers](https://github.com/custom-cards/custom-card-helpers), [home-assistant-js-websocket](https://github.com/home-assistant/home-assistant-js-websocket) |
 
 ---
@@ -156,19 +156,19 @@ columns: 3
 
 ### Configuration options
 
-| Option             | Type     | Default           | Description                                  |
-| ------------------ | -------- | ----------------- | -------------------------------------------- |
-| `title`            | string   | *(none)*          | Card title displayed at the top              |
-| `entities`         | string[] | *(auto-discover)* | Manual list of entity IDs                    |
-| `exclude_entities` | string[] | `[]`              | Entity IDs to exclude from auto-discovery    |
-| `view_mode`        | string   | `grid`            | `grid`, `list`, or `compact`                 |
-| `progress_type`    | string   | `ring`            | `ring` (circular) or `bar` (horizontal)      |
-| `sort_by`          | string   | `urgency`         | `urgency`, `name`, or `due_date`             |
-| `filter`           | string   | `all`             | `all`, `overdue`, `due_soon`, or `on_track`  |
-| `due_soon_days`    | number   | `7`               | Days threshold for "due soon" status         |
-| `show_header`      | boolean  | `true`            | Show the summary header with status counts   |
-| `show_filter_bar`  | boolean  | `false`           | Show interactive filter chips                |
-| `columns`          | number   | `3`               | Number of grid columns (grid mode only)      |
+| Option             | Type     | Default           | Description                                 |
+| ------------------ | -------- | ----------------- | ------------------------------------------- |
+| `title`            | string   | _(none)_          | Card title displayed at the top             |
+| `entities`         | string[] | _(auto-discover)_ | Manual list of entity IDs                   |
+| `exclude_entities` | string[] | `[]`              | Entity IDs to exclude from auto-discovery   |
+| `view_mode`        | string   | `grid`            | `grid`, `list`, or `compact`                |
+| `progress_type`    | string   | `ring`            | `ring` (circular) or `bar` (horizontal)     |
+| `sort_by`          | string   | `urgency`         | `urgency`, `name`, or `due_date`            |
+| `filter`           | string   | `all`             | `all`, `overdue`, `due_soon`, or `on_track` |
+| `due_soon_days`    | number   | `7`               | Days threshold for "due soon" status        |
+| `show_header`      | boolean  | `true`            | Show the summary header with status counts  |
+| `show_filter_bar`  | boolean  | `false`           | Show interactive filter chips               |
+| `columns`          | number   | `3`               | Number of grid columns (grid mode only)     |
 
 ---
 
@@ -190,17 +190,17 @@ npx lefthook install
 
 ### Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm start` | Dev build with watch + local server on `:5000` |
-| `npm run build` | Production build to `dist/` |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | ESLint with auto-fix |
-| `npm run format` | Prettier format |
-| `npm run format:check` | Prettier check |
-| `npm run typecheck` | TypeScript check |
-| `npm run test` | Run Vitest tests |
-| `npm run test:watch` | Vitest watch mode |
+| Command                | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| `npm start`            | Dev build with watch + local server on `:5000` |
+| `npm run build`        | Production build to `dist/`                    |
+| `npm run lint`         | Run ESLint                                     |
+| `npm run lint:fix`     | ESLint with auto-fix                           |
+| `npm run format`       | Prettier format                                |
+| `npm run format:check` | Prettier check                                 |
+| `npm run typecheck`    | TypeScript check                               |
+| `npm run test`         | Run Vitest tests                               |
+| `npm run test:watch`   | Vitest watch mode                              |
 
 ### Local Testing in Home Assistant
 
