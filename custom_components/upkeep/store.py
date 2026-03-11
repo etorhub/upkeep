@@ -1,7 +1,6 @@
 """Store Upkeep configuration."""
 
 import logging
-import re
 from dataclasses import asdict, dataclass
 from datetime import datetime
 
@@ -17,14 +16,6 @@ _LOGGER = logging.getLogger(__name__)
 STORAGE_KEY = "upkeep.storage"
 STORAGE_VERSION_MAJOR = 1
 STORAGE_VERSION_MINOR = 2
-
-
-def _slugify(text: str) -> str:
-    """Convert title to entity_id-friendly slug."""
-    text = text.lower().strip()
-    text = re.sub(r"[^\w\s-]", "", text)
-    text = re.sub(r"[-\s]+", "_", text)
-    return text[:50]
 
 
 @dataclass
@@ -94,7 +85,7 @@ class TaskStore:
             STORAGE_KEY,
             minor_version=STORAGE_VERSION_MINOR,
         )
-        self._tasks: dict[str, HomeMaintenanceTask] = {}
+        self._tasks: dict[str, UpkeepTask] = {}
 
     async def async_load(self) -> None:
         """Load tasks from storage."""
@@ -145,7 +136,7 @@ class TaskStore:
         """Get tasks by tag id."""
         return [t.to_dict() for t in self._tasks.values() if t.tag_id == tag_id]
 
-    def add(self, task: HomeMaintenanceTask, labels: list[str] | None = None) -> str | None:
+    def add(self, task: UpkeepTask, labels: list[str] | None = None) -> str | None:
         """Add new task."""
         add_entities = self.hass.data[const.DOMAIN].get("add_entities")
         if not add_entities:

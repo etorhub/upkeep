@@ -17,7 +17,7 @@ from .const import (
 class HomeMaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
     """Config flow for Upkeep."""
 
-    VERSION = "1.0.0"
+    VERSION = 1
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
