@@ -15,7 +15,7 @@
   "module": "upkeep-card.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/etorhub/home-maintenance-card"
+    "url": "https://github.com/etorhub/upkeep"
   },
   "license": "MIT",
   "engines": {
