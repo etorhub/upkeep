@@ -153,11 +153,14 @@ export class UpkeepPanel extends LitElement {
         </div>
         <div class="form-row">
           <ha-textfield label="Interval (e.g. 90)" type="number" id="add-interval" .value=${'90'}></ha-textfield>
-          <ha-select label="Period" id="add-period">
-            <option value="days">Days</option>
-            <option value="weeks">Weeks</option>
-            <option value="months">Months</option>
-          </ha-select>
+          <label class="period-select-label">
+            <span>Period</span>
+            <select id="add-period">
+              <option value="days">Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+            </select>
+          </label>
         </div>
         <div class="form-row">
           <ha-textfield label="Description (optional)" id="add-desc"></ha-textfield>
@@ -342,6 +345,24 @@ export class UpkeepPanel extends LitElement {
       .form-row ha-textfield,
       .form-row ha-select {
         flex: 1;
+      }
+      .period-select-label {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+      .period-select-label select {
+        width: 100%;
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        padding: 0 12px;
+        font-size: 14px;
       }
       .form-actions {
         margin-top: 12px;
