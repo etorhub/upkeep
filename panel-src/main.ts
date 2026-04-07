@@ -46,19 +46,26 @@ export class UpkeepPanel extends LitElement {
     }
   }
 
-  private _loadTasks(): void {
+  private _loadTasks(options?: { silent?: boolean }): void {
     if (!this.hass?.connection) return;
-    this._loading = true;
+    const shouldShowLoading = !options?.silent;
+    if (shouldShowLoading) {
+      this._loading = true;
+    }
     this.hass.connection
       .sendMessagePromise({ type: 'upkeep/get_tasks' })
       .then((msg: unknown) => {
         const m = msg as { result?: Task[] };
         this._tasks = m.result ?? [];
-        this._loading = false;
+        if (shouldShowLoading) {
+          this._loading = false;
+        }
         this._error = null;
       })
       .catch((err: Error) => {
-        this._loading = false;
+        if (shouldShowLoading) {
+          this._loading = false;
+        }
         this._error = err?.message ?? 'Failed to load tasks';
       });
   }
@@ -68,7 +75,8 @@ export class UpkeepPanel extends LitElement {
   }
 
   private _refresh(): void {
-    this._loadTasks();
+    // Keep the current list rendered during refresh to avoid layout shifts.
+    this._loadTasks({ silent: true });
   }
 
   private _getTaskEntityId(task: Task): string | null {
