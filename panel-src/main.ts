@@ -32,9 +32,10 @@ export class UpkeepPanel extends LitElement {
   @state() private _error: string | null = null;
   @state() private _showAddForm = false;
   @state() private _filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed' = 'all';
+  private _loadRequestId = 0;
 
   updated(changedProps: Map<string, unknown>): void {
-    if (changedProps.has('hass') && this.hass?.connection) {
+    if (changedProps.has('hass') && this.hass?.connection && !this._showAddForm) {
       this._loadTasks();
     }
   }
@@ -52,9 +53,11 @@ export class UpkeepPanel extends LitElement {
     if (shouldShowLoading) {
       this._loading = true;
     }
+    const requestId = ++this._loadRequestId;
     this.hass.connection
       .sendMessagePromise({ type: 'upkeep/get_tasks' })
       .then((msg: unknown) => {
+        if (requestId !== this._loadRequestId) return;
         const m = msg as { result?: Task[] };
         this._tasks = m.result ?? [];
         if (shouldShowLoading) {
@@ -63,6 +66,7 @@ export class UpkeepPanel extends LitElement {
         this._error = null;
       })
       .catch((err: Error) => {
+        if (requestId !== this._loadRequestId) return;
         if (shouldShowLoading) {
           this._loading = false;
         }
