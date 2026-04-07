@@ -108,16 +108,10 @@ describe('upkeep-panel add form', () => {
     const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
     await (el as any).updateComplete;
 
-    const getByIdSpy = vi
-      .spyOn(el.shadowRoot!, 'getElementById')
-      .mockImplementation((id: string) => {
-        if (id === 'add-title') return { value: 'New Task' } as unknown as HTMLElement;
-        if (id === 'add-interval') return { value: '30' } as unknown as HTMLElement;
-        if (id === 'add-period') return { value: 'days' } as unknown as HTMLElement;
-        return null;
-      });
-
     (el as any)._showAddForm = true;
+    (el as any)._draftTitle = 'New Task';
+    (el as any)._draftInterval = '30';
+    (el as any)._draftPeriod = 'days';
     (el as any)._loadTasks({ silent: true });
     await (el as any)._submitAdd();
 
@@ -150,6 +144,39 @@ describe('upkeep-panel add form', () => {
     await Promise.resolve();
 
     expect((el as any)._tasks.map((task: { id: string }) => task.id)).toEqual(['new-task']);
-    getByIdSpy.mockRestore();
+  });
+
+  it('submits add task command from tracked draft fields', async () => {
+    const sendMessagePromise = vi.fn((msg: { type: string }) => {
+      if (msg.type === 'upkeep/get_tasks') return Promise.resolve({ result: [] });
+      if (msg.type === 'upkeep/add_task') return Promise.resolve({ result: { success: true } });
+      return Promise.resolve({ result: [] });
+    });
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    (el as any)._showAddForm = true;
+    (el as any)._draftTitle = 'HVAC Filter';
+    (el as any)._draftDescription = 'Replace filter';
+    (el as any)._draftInterval = '60';
+    (el as any)._draftPeriod = 'days';
+
+    await (el as any)._submitAdd();
+
+    expect(sendMessagePromise).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'upkeep/add_task',
+        title: 'HVAC Filter',
+        description: 'Replace filter',
+        interval_value: 60,
+        interval_type: 'days',
+      })
+    );
+    expect((el as any)._showAddForm).toBe(false);
   });
 });
