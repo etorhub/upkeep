@@ -32,6 +32,10 @@ export class UpkeepPanel extends LitElement {
   @state() private _error: string | null = null;
   @state() private _showAddForm = false;
   @state() private _filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed' = 'all';
+  @state() private _draftTitle = '';
+  @state() private _draftDescription = '';
+  @state() private _draftInterval = '90';
+  @state() private _draftPeriod = 'days';
   private _loadRequestId = 0;
 
   updated(changedProps: Map<string, unknown>): void {
@@ -128,7 +132,7 @@ export class UpkeepPanel extends LitElement {
                 `
               )}
             </div>
-            <ha-button @click=${() => { this._showAddForm = !this._showAddForm; }}>
+            <ha-button @click=${() => { this._toggleAddForm(); }}>
               ${this._showAddForm ? 'Cancel' : 'Add Task'}
             </ha-button>
           </div>
@@ -153,21 +157,37 @@ export class UpkeepPanel extends LitElement {
       <div class="add-form">
         <h3>Add Task</h3>
         <div class="form-row">
-          <ha-textfield label="Title" id="add-title" .value=${''}></ha-textfield>
+          <ha-textfield
+            label="Title"
+            id="add-title"
+            .value=${this._draftTitle}
+            @input=${this._onTitleInput}
+          ></ha-textfield>
         </div>
         <div class="form-row">
-          <ha-textfield label="Interval (e.g. 90)" type="number" id="add-interval" .value=${'90'}></ha-textfield>
+          <ha-textfield
+            label="Interval (e.g. 90)"
+            type="number"
+            id="add-interval"
+            .value=${this._draftInterval}
+            @input=${this._onIntervalInput}
+          ></ha-textfield>
           <label class="period-select-label">
             <span>Period</span>
-            <select id="add-period">
-              <option value="days">Days</option>
-              <option value="weeks">Weeks</option>
-              <option value="months">Months</option>
+            <select id="add-period" .value=${this._draftPeriod} @change=${this._onPeriodChange}>
+              <option value="days" ?selected=${this._draftPeriod === 'days'}>Days</option>
+              <option value="weeks" ?selected=${this._draftPeriod === 'weeks'}>Weeks</option>
+              <option value="months" ?selected=${this._draftPeriod === 'months'}>Months</option>
             </select>
           </label>
         </div>
         <div class="form-row">
-          <ha-textfield label="Description (optional)" id="add-desc"></ha-textfield>
+          <ha-textfield
+            label="Description (optional)"
+            id="add-desc"
+            .value=${this._draftDescription}
+            @input=${this._onDescriptionInput}
+          ></ha-textfield>
         </div>
         <div class="form-actions">
           <ha-button @click=${this._submitAdd}>Add Task</ha-button>
@@ -176,22 +196,55 @@ export class UpkeepPanel extends LitElement {
     `;
   }
 
+  private _toggleAddForm(): void {
+    this._showAddForm = !this._showAddForm;
+    if (!this._showAddForm) {
+      this._resetDraft();
+    }
+  }
+
+  private _resetDraft(): void {
+    this._draftTitle = '';
+    this._draftDescription = '';
+    this._draftInterval = '90';
+    this._draftPeriod = 'days';
+  }
+
+  private _onTitleInput = (ev: Event): void => {
+    const target = ev.target as HTMLInputElement & { value?: string };
+    this._draftTitle = target?.value ?? '';
+  };
+
+  private _onIntervalInput = (ev: Event): void => {
+    const target = ev.target as HTMLInputElement & { value?: string };
+    this._draftInterval = target?.value ?? '90';
+  };
+
+  private _onDescriptionInput = (ev: Event): void => {
+    const target = ev.target as HTMLInputElement & { value?: string };
+    this._draftDescription = target?.value ?? '';
+  };
+
+  private _onPeriodChange = (ev: Event): void => {
+    const target = ev.target as HTMLSelectElement;
+    this._draftPeriod = target?.value ?? 'days';
+  };
+
   private _submitAdd = async () => {
-    const titleEl = this.shadowRoot?.getElementById('add-title') as HTMLInputElement;
-    const intervalEl = this.shadowRoot?.getElementById('add-interval') as HTMLInputElement;
-    const periodEl = this.shadowRoot?.getElementById('add-period') as HTMLSelectElement;
-    const title = titleEl?.value?.trim();
+    const title = this._draftTitle.trim();
     if (!title) return;
-    const interval = parseInt(intervalEl?.value ?? '90', 10) || 90;
-    const interval_type = periodEl?.value ?? 'days';
+    const interval = parseInt(this._draftInterval, 10) || 90;
+    const interval_type = this._draftPeriod;
     try {
       await this._sendCommand({
         type: 'upkeep/add_task',
         title,
+        description: this._draftDescription.trim() || undefined,
         interval_value: interval,
         interval_type,
       });
       this._showAddForm = false;
+      this._resetDraft();
       this._refresh();
     } catch (e) {
       this._error = (e as Error).message;
