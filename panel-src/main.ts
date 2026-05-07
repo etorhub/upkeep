@@ -157,21 +157,28 @@ export class UpkeepPanel extends LitElement {
       <div class="add-form">
         <h3>Add Task</h3>
         <div class="form-row">
-          <ha-textfield
-            label="Title"
-            id="add-title"
-            .value=${this._draftTitle}
-            @input=${this._onTitleInput}
-          ></ha-textfield>
+          <label class="form-field-label">
+            <span>Title</span>
+            <input
+              type="text"
+              id="add-title"
+              .value=${this._draftTitle}
+              @input=${this._onTitleInput}
+              placeholder="e.g. Change air filter"
+            />
+          </label>
         </div>
         <div class="form-row">
-          <ha-textfield
-            label="Interval (e.g. 90)"
-            type="number"
-            id="add-interval"
-            .value=${this._draftInterval}
-            @input=${this._onIntervalInput}
-          ></ha-textfield>
+          <label class="form-field-label">
+            <span>Interval</span>
+            <input
+              type="number"
+              id="add-interval"
+              .value=${this._draftInterval}
+              @input=${this._onIntervalInput}
+              min="1"
+            />
+          </label>
           <label class="period-select-label">
             <span>Period</span>
             <select id="add-period" .value=${this._draftPeriod} @change=${this._onPeriodChange}>
@@ -182,12 +189,16 @@ export class UpkeepPanel extends LitElement {
           </label>
         </div>
         <div class="form-row">
-          <ha-textfield
-            label="Description (optional)"
-            id="add-desc"
-            .value=${this._draftDescription}
-            @input=${this._onDescriptionInput}
-          ></ha-textfield>
+          <label class="form-field-label">
+            <span>Description (optional)</span>
+            <input
+              type="text"
+              id="add-desc"
+              .value=${this._draftDescription}
+              @input=${this._onDescriptionInput}
+              placeholder="Optional details..."
+            />
+          </label>
         </div>
         <div class="form-actions">
           <ha-button @click=${this._submitAdd}>Add Task</ha-button>
@@ -399,9 +410,28 @@ export class UpkeepPanel extends LitElement {
         gap: 12px;
         margin-bottom: 12px;
       }
-      .form-row ha-textfield,
-      .form-row ha-select {
+      .form-field-label {
         flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+      .form-field-label input {
+        width: 100%;
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        padding: 0 12px;
+        font-size: 14px;
+        box-sizing: border-box;
+        outline: none;
+      }
+      .form-field-label input:focus {
+        border-color: var(--primary-color);
       }
       .period-select-label {
         flex: 1;
