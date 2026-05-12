@@ -1,7 +1,7 @@
 node_modules/
 storybook-static/
-# Ignore dist contents except the built card (HACS needs it on default branch)
-dist/*
-!dist/upkeep-card.js
+dist/
+custom_components/upkeep/www/
+custom_components/upkeep/panel/dist/
 .DS_Store
 *.log

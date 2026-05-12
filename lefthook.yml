@@ -16,13 +16,6 @@ pre-commit:
     format:
       glob: "*.{ts,js,json,md}"
       run: npm run format:check
-    build-and-stage:
-      run: npm run build && git add dist/upkeep-card.js custom_components/upkeep/www/upkeep-card.js custom_components/upkeep/panel/dist/main.js
   skip:
     - merge
     - rebase
-
-pre-push:
-  commands:
-    build:
-      run: npm run build
