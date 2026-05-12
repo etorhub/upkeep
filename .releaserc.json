@@ -50,7 +50,9 @@
       "@semantic-release/github",
       {
         "assets": [
-          { "path": "dist/upkeep-card.js", "label": "HACS distribution" }
+          { "path": "dist/upkeep-card.js", "label": "HACS distribution" },
+          { "path": "custom_components/upkeep/www/upkeep-card.js", "label": "Card (www)" },
+          { "path": "custom_components/upkeep/panel/dist/main.js", "label": "Panel" }
         ]
       }
     ]
