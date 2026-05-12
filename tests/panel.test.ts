@@ -179,4 +179,77 @@ describe('upkeep-panel add form', () => {
     );
     expect((el as any)._showAddForm).toBe(false);
   });
+
+  it('shows newly added task in the list after successful submit', async () => {
+    const newTask = {
+      id: 'hvac-filter',
+      title: 'HVAC Filter',
+      task_type: 'interval',
+      interval_value: 60,
+      interval_type: 'days',
+      enabled: true,
+    };
+    let getTasksCall = 0;
+    const sendMessagePromise = vi.fn((msg: { type: string }) => {
+      if (msg.type === 'upkeep/get_tasks') {
+        getTasksCall += 1;
+        // First call (initial load): empty. Second call (after add): includes new task.
+        return Promise.resolve({ result: getTasksCall === 1 ? [] : [newTask] });
+      }
+      if (msg.type === 'upkeep/add_task') return Promise.resolve({ result: { success: true } });
+      return Promise.resolve({ result: [] });
+    });
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    (el as any)._showAddForm = true;
+    (el as any)._draftTitle = 'HVAC Filter';
+    (el as any)._draftInterval = '60';
+    (el as any)._draftPeriod = 'days';
+
+    await (el as any)._submitAdd();
+    await (el as any).updateComplete;
+
+    expect((el as any)._tasks).toEqual([newTask]);
+
+    const taskTitles = Array.from(el.shadowRoot!.querySelectorAll('.task-title')).map((el) =>
+      el.textContent?.trim()
+    );
+    expect(taskTitles).toContain('HVAC Filter');
+  });
+
+  it('shows empty state immediately rather than a blank area when task list is empty', async () => {
+    // Simulate a slow get_tasks response — the empty state must be visible before it resolves.
+    let resolveLoad: ((v: { result: never[] }) => void) | undefined;
+    const pendingLoad = new Promise<{ result: never[] }>((resolve) => {
+      resolveLoad = resolve;
+    });
+    const sendMessagePromise = vi.fn((msg: { type: string }) => {
+      if (msg.type === 'upkeep/get_tasks') return pendingLoad;
+      return Promise.resolve({ result: [] });
+    });
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    // While the load is still in flight, empty state (not a blank) must be rendered.
+    const emptyDiv = el.shadowRoot?.querySelector('.empty');
+    expect(emptyDiv).not.toBeNull();
+
+    // Resolve to confirm task list updates correctly afterwards.
+    resolveLoad?.({ result: [] });
+    await Promise.resolve();
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('.empty')).not.toBeNull();
+  });
 });

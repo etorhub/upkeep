@@ -28,7 +28,6 @@ export class UpkeepPanel extends LitElement {
   @property({ type: Boolean }) narrow = false;
 
   @state() private _tasks: Task[] = [];
-  @state() private _loading = true;
   @state() private _error: string | null = null;
   @state() private _showAddForm = false;
   @state() private _filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed' = 'all';
@@ -51,12 +50,8 @@ export class UpkeepPanel extends LitElement {
     }
   }
 
-  private _loadTasks(options?: { silent?: boolean }): void {
+  private _loadTasks(_options?: { silent?: boolean }): void {
     if (!this.hass?.connection) return;
-    const shouldShowLoading = !options?.silent;
-    if (shouldShowLoading) {
-      this._loading = true;
-    }
     const requestId = ++this._loadRequestId;
     this.hass.connection
       .sendMessagePromise({ type: 'upkeep/get_tasks' })
@@ -64,16 +59,10 @@ export class UpkeepPanel extends LitElement {
         if (requestId !== this._loadRequestId) return;
         const m = msg as { result?: Task[] };
         this._tasks = m.result ?? [];
-        if (shouldShowLoading) {
-          this._loading = false;
-        }
         this._error = null;
       })
       .catch((err: Error) => {
         if (requestId !== this._loadRequestId) return;
-        if (shouldShowLoading) {
-          this._loading = false;
-        }
         this._error = err?.message ?? 'Failed to load tasks';
       });
   }
@@ -139,12 +128,11 @@ export class UpkeepPanel extends LitElement {
         </div>
 
         ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
-        ${this._loading ? html`<div class="loading">Loading tasks...</div>` : nothing}
 
         ${this._showAddForm ? this._renderAddForm() : nothing}
 
         <div class="task-list">
-          ${tasks.length === 0 && !this._loading
+          ${tasks.length === 0
             ? html`<div class="empty">No tasks. Click "Add Task" to create one.</div>`
             : tasks.map((task) => this._renderTask(task))}
         </div>
@@ -502,10 +490,6 @@ export class UpkeepPanel extends LitElement {
         color: var(--error-color);
         padding: 12px;
         margin-bottom: 12px;
-      }
-      .loading {
-        padding: 12px;
-        color: var(--secondary-text-color);
       }
       .empty {
         padding: 32px;
