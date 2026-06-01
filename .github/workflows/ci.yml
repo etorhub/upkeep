@@ -35,6 +35,9 @@ jobs:
       - name: Test
         run: npm run test
 
+      - name: Python path tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py'
+
       - name: Build
         run: npm run build
 

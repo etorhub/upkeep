@@ -19,6 +19,9 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 PANEL_FILENAME = "panel/dist/main.js"
 PANEL_URL = "upkeep"
+# Lovelace card static mount; must not match /{PANEL_URL} (panel frontend route).
+CARD_URL_BASE = "/upkeep_lovelace"
+LEGACY_CARD_URL_BASE = "/upkeep"
 PANEL_API_PATH = "/upkeep_static"
 PANEL_API_URL = PANEL_API_PATH + "/main.js"
 PANEL_TITLE = NAME

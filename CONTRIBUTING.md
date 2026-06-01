@@ -7,7 +7,7 @@ Contributions are welcome. Please:
 3. **Make changes** and ensure:
    - `npm run lint` passes
    - `npm run typecheck` passes
-   - `npm run test` passes
+   - `npm run test` passes (Vitest and Python path guardrails)
    - `npm run format:check` passes
 4. **Commit** with conventional format (`npm run commit` or `git commit -m "feat: add feature X"`).
 5. **Push** to your fork (`git push origin feature/your-feature`).
