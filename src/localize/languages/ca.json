@@ -41,6 +41,7 @@
     "name": "Nom",
     "due_date": "Data de venciment",
     "all": "Totes",
+    "snoozed": "Ajornada",
     "auto_discover": "Auto-descobrir entitats"
   }
 }

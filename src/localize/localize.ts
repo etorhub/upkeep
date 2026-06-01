@@ -9,9 +9,29 @@ import * as nl from './languages/nl.json';
 
 const languages: Record<string, unknown> = { en, es, ca, fr, de, it, pt, nl };
 
+function resolveLanguageCode(language?: string): string {
+  if (typeof language === 'string' && language.length > 0) {
+    return language.replace(/['"]+/g, '').replaceAll('-', '_');
+  }
+  const stored = localStorage.getItem('selectedLanguage');
+  if (typeof stored === 'string' && stored.length > 0) {
+    return stored.replace(/['"]+/g, '').replaceAll('-', '_');
+  }
+  return 'en';
+}
+
+function getLanguageRoot(pack: unknown): unknown {
+  if (pack == null || typeof pack !== 'object') return pack;
+  const record = pack as Record<string, unknown>;
+  if (record.default != null && typeof record.default === 'object') {
+    return record.default;
+  }
+  return pack;
+}
+
 function getNestedValue(obj: unknown, path: string): string | undefined {
   const keys = path.split('.');
-  let current: unknown = obj;
+  let current: unknown = getLanguageRoot(obj);
   for (const key of keys) {
     if (current == null || typeof current !== 'object') return undefined;
     current = (current as Record<string, unknown>)[key];
@@ -25,9 +45,7 @@ export function localize(
   replace?: string,
   language?: string
 ): string {
-  const lang = (language || localStorage.getItem('selectedLanguage') || 'en')
-    .replace(/['"]+/g, '')
-    .replace('-', '_');
+  const lang = resolveLanguageCode(language);
 
   let translated = getNestedValue(languages[lang], key);
 
@@ -37,7 +55,7 @@ export function localize(
   }
 
   if (!translated) {
-    translated = getNestedValue(languages['en'], key);
+    translated = getNestedValue(languages.en, key);
   }
 
   if (translated && search && replace) {

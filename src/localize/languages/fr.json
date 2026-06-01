@@ -41,6 +41,7 @@
     "name": "Nom",
     "due_date": "Date d'échéance",
     "all": "Toutes",
+    "snoozed": "Reportée",
     "auto_discover": "Découverte automatique des entités"
   }
 }

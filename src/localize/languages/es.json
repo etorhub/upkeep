@@ -41,6 +41,7 @@
     "name": "Nombre",
     "due_date": "Fecha de vencimiento",
     "all": "Todas",
+    "snoozed": "Pospuesta",
     "auto_discover": "Auto-descubrir entidades"
   }
 }
