@@ -113,6 +113,7 @@ export class HomeMaintenanceCard extends LitElement {
     const showFilterBar = this._config.show_filter_bar ?? DEFAULTS.show_filter_bar;
     const title = this._config.title;
     const columns = this._columns();
+    const lang = this.hass?.locale?.language ?? this.hass?.language;
 
     return html`
       <ha-card>
@@ -124,13 +125,15 @@ export class HomeMaintenanceCard extends LitElement {
             `
           : nothing}
         <div class="card-content">
-          ${showHeader ? html`<hm-summary-header .tasks=${allTasks}></hm-summary-header>` : nothing}
+          ${showHeader
+            ? html`<hm-summary-header .hass=${this.hass} .tasks=${allTasks}></hm-summary-header>`
+            : nothing}
           ${showFilterBar ? this._renderFilterBar() : nothing}
           ${tasks.length === 0
             ? html`
                 <div class="empty">
                   <ha-icon icon="mdi:check-circle-outline"></ha-icon>
-                  ${localize('card.no_tasks')}
+                  ${localize('card.no_tasks', undefined, undefined, lang)}
                 </div>
               `
             : this._renderTasks(tasks, viewMode, progressType, columns)}
@@ -141,6 +144,7 @@ export class HomeMaintenanceCard extends LitElement {
 
   private _renderFilterBar(): TemplateResult {
     const filters = ['all', 'overdue', 'due_soon', 'on_track', 'snoozed'] as const;
+    const lang = this.hass?.locale?.language ?? this.hass?.language;
     return html`
       <div class="filter-bar">
         ${filters.map(
@@ -151,7 +155,7 @@ export class HomeMaintenanceCard extends LitElement {
                 this._activeFilter = f;
               }}
             >
-              ${localize(`editor.${f}`)}
+              ${localize(`editor.${f}`, undefined, undefined, lang)}
             </button>
           `
         )}

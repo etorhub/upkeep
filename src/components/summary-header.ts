@@ -1,38 +1,41 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { HomeAssistant } from 'custom-card-helpers';
 import { TaskData } from '../types';
 import { URGENCY_COLORS } from '../const';
 import { localize } from '../localize/localize';
 
 @customElement('hm-summary-header')
 export class SummaryHeader extends LitElement {
+  @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) tasks: TaskData[] = [];
 
   protected render(): TemplateResult {
     const overdue = this.tasks.filter((t) => t.urgency === 'overdue').length;
     const dueSoon = this.tasks.filter((t) => t.urgency === 'due_soon').length;
     const onTrack = this.tasks.filter((t) => t.urgency === 'on_track').length;
+    const lang = this.hass?.locale?.language ?? this.hass?.language;
 
     return html`
       <div class="header">
         ${overdue > 0
           ? html`
               <span class="badge overdue" style="--badge-color:${URGENCY_COLORS.overdue}">
-                ${overdue} ${localize('card.overdue')}
+                ${overdue} ${localize('card.overdue', undefined, undefined, lang)}
               </span>
             `
           : ''}
         ${dueSoon > 0
           ? html`
               <span class="badge due-soon" style="--badge-color:${URGENCY_COLORS.due_soon}">
-                ${dueSoon} ${localize('card.due_soon')}
+                ${dueSoon} ${localize('card.due_soon', undefined, undefined, lang)}
               </span>
             `
           : ''}
         ${onTrack > 0
           ? html`
               <span class="badge on-track" style="--badge-color:${URGENCY_COLORS.on_track}">
-                ${onTrack} ${localize('card.on_track')}
+                ${onTrack} ${localize('card.on_track', undefined, undefined, lang)}
               </span>
             `
           : ''}

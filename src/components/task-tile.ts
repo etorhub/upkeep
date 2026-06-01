@@ -165,7 +165,14 @@ export class TaskTile extends LitElement {
     }
 
     return html`
-      <button class="btn btn-done" @click=${this._handleDone}>${localize('card.mark_done')}</button>
+      <button class="btn btn-done" @click=${this._handleDone}>
+        ${localize(
+          'card.mark_done',
+          undefined,
+          undefined,
+          this.hass?.locale?.language ?? this.hass?.language
+        )}
+      </button>
     `;
   }
 
