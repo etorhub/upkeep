@@ -8,9 +8,10 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_call_later
 
+from .const import CARD_URL_BASE, LEGACY_CARD_URL_BASE
+
 _LOGGER = logging.getLogger(__name__)
 
-URL_BASE = "/upkeep"
 CARD_FILENAME = "upkeep-card.js"
 
 
@@ -33,11 +34,11 @@ async def async_register_card(hass: HomeAssistant) -> None:
 
     try:
         await hass.http.async_register_static_paths(
-            [StaticPathConfig(URL_BASE, www_path, cache_headers=False)]
+            [StaticPathConfig(CARD_URL_BASE, www_path, cache_headers=False)]
         )
-        _LOGGER.debug("Card path registered: %s -> %s", URL_BASE, www_path)
+        _LOGGER.debug("Card path registered: %s -> %s", CARD_URL_BASE, www_path)
     except RuntimeError:
-        _LOGGER.debug("Card path already registered: %s", URL_BASE)
+        _LOGGER.debug("Card path already registered: %s", CARD_URL_BASE)
 
     lovelace = hass.data.get("lovelace")
     if lovelace is None:
@@ -55,11 +56,17 @@ async def async_register_card(hass: HomeAssistant) -> None:
         if not getattr(resources, "loaded", True):
             async_call_later(hass, 5, _add_resource)
             return
-        url = f"{URL_BASE}/{CARD_FILENAME}"
+        url = f"{CARD_URL_BASE}/{CARD_FILENAME}"
+        legacy_url = f"{LEGACY_CARD_URL_BASE}/{CARD_FILENAME}"
         version = _get_version()
         full_url = f"{url}?v={version}"
         items = getattr(resources, "async_items", lambda: [])()
-        existing = [r for r in items if r.get("url", "").startswith(url)]
+        existing = [
+            r
+            for r in items
+            if r.get("url", "").startswith(url)
+            or r.get("url", "").startswith(legacy_url)
+        ]
         if existing:
             for r in existing:
                 if r.get("url") != full_url:

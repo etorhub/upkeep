@@ -69,7 +69,9 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 3. Restart Home Assistant.
 4. Go to **Settings → Devices & Services → Add Integration** and add **Upkeep**.
 
-The Lovelace card is auto-registered when the integration is configured. Add the card to your dashboard via **Add Card → Upkeep Card**.
+The Lovelace card is auto-registered when the integration is configured (served at `/upkeep_lovelace/upkeep-card.js`). Add the card to your dashboard via **Add Card → Upkeep Card**.
+
+If you use **YAML mode** for Lovelace and added the card resource manually, use `/upkeep_lovelace/upkeep-card.js` instead of `/upkeep/upkeep-card.js`. Storage-mode dashboards are updated automatically when you reload the integration.
 
 ### Sidebar panel
 
@@ -77,7 +79,7 @@ After you add the Upkeep integration, a **sidebar panel** is registered automati
 
 1. Complete **Settings → Devices & Services → Add Integration → Upkeep** (or use the HACS install flow above).
 2. Look for **Upkeep** in the left sidebar (default icon: hammer-wrench).
-3. Or open `https://<your-home-assistant>/upkeep` directly in the browser.
+3. Or open `https://<your-home-assistant>/upkeep` directly in the browser (bookmarking and refreshing this URL is supported).
 
 To change visibility or labeling, go to **Settings → Devices & Services → Upkeep → Configure**:
 
