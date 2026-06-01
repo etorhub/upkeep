@@ -3,6 +3,7 @@
 A full [Home Assistant](https://www.home-assistant.io/) integration for recurring maintenance tasks, with a sidebar panel for management and a Lovelace card for dashboards. Replaces the unmaintained [TJPoorman/home_maintenance](https://github.com/TJPoorman/home_maintenance) integration.
 
 [![Open your Home Assistant instance and show the add repository dialog for this repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=etorhub&repository=upkeep&category=integration)
+[![Vibe Coded](https://img.shields.io/badge/Vibe_Coded-ff69b4?style=for-the-badge)](https://github.com/danielrosehill/Is-Vibe-Coded)
 
 ---
 
