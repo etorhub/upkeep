@@ -86,6 +86,14 @@ To change visibility or labeling, go to **Settings → Devices & Services → Up
 
 Install from a [GitHub release](https://github.com/etorhub/upkeep/releases) (HACS `zip_release`) so `panel/dist/main.js` is included. If the panel is missing from the sidebar and logs mention a missing panel file, upgrade to the latest release.
 
+### Upkeep does not appear under Add integration
+
+HACS installs the integration into `config/custom_components/upkeep/`. After install, **`manifest.json` must be directly in that folder**, not in a nested `custom_components/upkeep/` path inside it.
+
+1. In **File editor** or SSH, confirm this file exists: `config/custom_components/upkeep/manifest.json`.
+2. If you only see `config/custom_components/upkeep/custom_components/upkeep/manifest.json`, remove the whole `config/custom_components/upkeep` folder, update to the latest release in HACS, reinstall, and restart Home Assistant.
+3. Then use **Settings → Devices & Services → Add integration** and search for **Upkeep**.
+
 ---
 
 ## Integration Structure
