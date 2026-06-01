@@ -1,26 +1,14 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
+import { formatDaysRemaining, getUrgencyColor } from '../src/utils';
+import { computePanelTaskStatus } from './task-status';
+import type { Task } from './types';
 
-export interface Task {
-  id: string;
-  entity_id?: string | null;
-  title: string;
-  description?: string;
-  task_type: string;
-  interval_value: number;
-  interval_type: string;
-  last_performed?: string;
-  frequency_target?: number;
-  current_count?: number;
-  watched_entity?: string;
-  assigned_user?: string;
-  icon?: string;
-  tag_id?: string;
-  enabled: boolean;
-  snoozed_until?: string;
-  notify_when_due?: boolean;
-}
+export type { Task } from './types';
+
+const DUE_SOON_DAYS = 7;
+const COMPLETE_FLASH_MS = 1500;
 
 @customElement('upkeep-panel')
 export class UpkeepPanel extends LitElement {
@@ -35,6 +23,9 @@ export class UpkeepPanel extends LitElement {
   @state() private _draftDescription = '';
   @state() private _draftInterval = '90';
   @state() private _draftPeriod = 'days';
+  @state() private _completingIds: string[] = [];
+  @state() private _justCompletedIds: string[] = [];
+  @state() private _rowErrors: Record<string, string> = {};
   private _loadRequestId = 0;
 
   updated(changedProps: Map<string, unknown>): void {
@@ -71,7 +62,6 @@ export class UpkeepPanel extends LitElement {
   }
 
   private _refresh(): void {
-    // Keep the current list rendered during refresh to avoid layout shifts.
     this._loadTasks({ silent: true });
   }
 
@@ -79,21 +69,60 @@ export class UpkeepPanel extends LitElement {
     return task.entity_id ?? null;
   }
 
+  private _getTaskStatus(task: Task) {
+    return computePanelTaskStatus(task, DUE_SOON_DAYS);
+  }
+
   private _filteredTasks(): Task[] {
-    const entities = this.hass.states;
     return this._tasks.filter((task) => {
       if (this._filter === 'snoozed') return !task.enabled;
-      const eid = this._getTaskEntityId(task);
-      if (!eid) return true;
-      const state = entities[eid];
-      if (!state?.attributes) return true;
-      const urgency = state.attributes.urgency;
-      if (this._filter === 'all') return true;
-      if (this._filter === 'overdue') return urgency === 'overdue';
-      if (this._filter === 'due_soon') return urgency === 'due_soon';
-      if (this._filter === 'on_track') return urgency === 'on_track';
-      return true;
+      if (this._filter === 'all') return task.enabled;
+      const { urgency } = this._getTaskStatus(task);
+      return urgency === this._filter;
     });
+  }
+
+  private _locale(): string {
+    return this.hass?.locale?.language ?? this.hass?.language ?? 'en';
+  }
+
+  private _setCompleting(taskId: string, active: boolean): void {
+    this._completingIds = active
+      ? [...this._completingIds.filter((id) => id !== taskId), taskId]
+      : this._completingIds.filter((id) => id !== taskId);
+  }
+
+  private _flashCompleted(taskId: string): void {
+    this._justCompletedIds = [...this._justCompletedIds.filter((id) => id !== taskId), taskId];
+    setTimeout(() => {
+      this._justCompletedIds = this._justCompletedIds.filter((id) => id !== taskId);
+    }, COMPLETE_FLASH_MS);
+  }
+
+  private _setRowError(taskId: string, message: string): void {
+    this._rowErrors = { ...this._rowErrors, [taskId]: message };
+  }
+
+  private _clearRowError(taskId: string): void {
+    if (!(taskId in this._rowErrors)) return;
+    const next = { ...this._rowErrors };
+    delete next[taskId];
+    this._rowErrors = next;
+  }
+
+  private async _runServiceOrWs(
+    task: Task,
+    service: string,
+    serviceData: Record<string, unknown>,
+    wsType: string,
+    wsPayload: Record<string, unknown>
+  ): Promise<void> {
+    const eid = this._getTaskEntityId(task);
+    if (eid) {
+      await this.hass.callService('upkeep', service, { entity_id: eid, ...serviceData });
+      return;
+    }
+    await this._sendCommand({ type: wsType, task_id: task.id, ...wsPayload });
   }
 
   protected render() {
@@ -113,16 +142,18 @@ export class UpkeepPanel extends LitElement {
                 (f) => html`
                   <button
                     class="filter-chip ${this._filter === f ? 'active' : ''}"
-                    @click=${() => { this._filter = f; }}
+                    @click=${() => {
+                      this._filter = f;
+                    }}
                   >
-                    ${f.replace('_', ' ')}
+                    ${f.replace(/_/g, ' ')}
                   </button>
                 `
               )}
             </div>
-            <ha-button @click=${() => { this._toggleAddForm(); }}>
+            <button class="btn btn-header" @click=${() => this._toggleAddForm()}>
               ${this._showAddForm ? 'Cancel' : 'Add Task'}
-            </ha-button>
+            </button>
           </div>
         </div>
 
@@ -188,7 +219,7 @@ export class UpkeepPanel extends LitElement {
           </label>
         </div>
         <div class="form-actions">
-          <ha-button @click=${this._submitAdd}>Add Task</ha-button>
+          <button class="btn btn-done" @click=${this._submitAdd}>Add Task</button>
         </div>
       </div>
     `;
@@ -250,90 +281,135 @@ export class UpkeepPanel extends LitElement {
   };
 
   private _renderTask(task: Task) {
-    const eid = this._getTaskEntityId(task);
-    const state = eid ? this.hass.states[eid] : null;
-    const urgency = state?.attributes?.urgency ?? 'on_track';
-    const daysRemaining = state?.attributes?.days_remaining ?? 0;
+    const { urgency, days_remaining } = this._getTaskStatus(task);
     const isSnoozed = !task.enabled;
+    const locale = this._locale();
+    const metaColor = getUrgencyColor(urgency);
+    const taskType = task.task_type === 'frequency' ? 'frequency' : 'time';
+    const metaText =
+      task.task_type === 'frequency'
+        ? `${task.current_count ?? 0} / ${task.frequency_target ?? 0} uses`
+        : formatDaysRemaining(days_remaining, locale, taskType);
+    const rowError = this._rowErrors[task.id];
+    const justCompleted = this._justCompletedIds.includes(task.id);
 
     return html`
-      <div class="task-row ${urgency} ${isSnoozed ? 'snoozed' : ''}">
-        <div class="task-info">
-          <ha-icon .icon=${task.icon || 'mdi:calendar-check'}></ha-icon>
-          <div>
-            <div class="task-title">${task.title}</div>
-            <div class="task-meta">
-              ${task.task_type === 'frequency'
-                ? html`${task.current_count ?? 0} / ${task.frequency_target ?? 0} uses`
-                : html`${urgency} · ${daysRemaining} days left`}
+      <div class="task-row ${urgency} ${isSnoozed ? 'snoozed' : ''} ${justCompleted ? 'done-anim' : ''}">
+        <div class="task-row-main">
+          <div class="task-info">
+            <ha-icon .icon=${task.icon || 'mdi:calendar-check'} style="color:${metaColor}"></ha-icon>
+            <div>
+              <div class="task-title">${task.title}</div>
+              <div class="task-meta" style="color:${metaColor}">${metaText}</div>
             </div>
           </div>
+          ${this._renderTaskActions(task, isSnoozed)}
         </div>
+        ${rowError ? html`<div class="row-error">${rowError}</div>` : nothing}
+      </div>
+    `;
+  }
+
+  private _renderTaskActions(task: Task, isSnoozed: boolean) {
+    const isCompleting = this._completingIds.includes(task.id);
+    const justCompleted = this._justCompletedIds.includes(task.id);
+
+    if (justCompleted) {
+      return html`
         <div class="task-actions">
-          ${!isSnoozed
-            ? html`
-                <ha-button @click=${() => this._completeTask(task)}>Complete</ha-button>
-                ${task.task_type === 'frequency'
-                  ? html`<ha-button @click=${() => this._incrementTask(task)}>+1</ha-button>`
-                  : nothing}
-                <ha-button @click=${() => this._snoozeTask(task)}>Snooze</ha-button>
-              `
-            : html`<ha-button @click=${() => this._enableTask(task)}>Enable</ha-button>`}
-          <ha-icon-button @click=${() => this._deleteTask(task)}>
-            <ha-icon icon="mdi:delete"></ha-icon>
-          </ha-icon-button>
+          <div class="done-check">
+            <ha-icon icon="mdi:check-circle"></ha-icon>
+          </div>
         </div>
+      `;
+    }
+
+    return html`
+      <div class="task-actions">
+        ${!isSnoozed
+          ? html`
+              <button
+                class="btn btn-done"
+                ?disabled=${isCompleting}
+                @click=${() => this._completeTask(task)}
+              >
+                ${isCompleting ? '…' : 'Complete'}
+              </button>
+              ${task.task_type === 'frequency'
+                ? html`
+                    <button class="btn btn-secondary" @click=${() => this._incrementTask(task)}>+1</button>
+                  `
+                : nothing}
+              <button class="btn btn-secondary" @click=${() => this._snoozeTask(task)}>Snooze</button>
+            `
+          : html`
+              <button class="btn btn-done" @click=${() => this._enableTask(task)}>Enable</button>
+            `}
+        <button
+          class="btn btn-icon"
+          aria-label="Delete task"
+          @click=${() => this._deleteTask(task)}
+        >
+          <ha-icon icon="mdi:delete"></ha-icon>
+        </button>
       </div>
     `;
   }
 
   private _incrementTask = async (task: Task) => {
+    this._clearRowError(task.id);
     try {
-      await this._sendCommand({ type: 'upkeep/increment_counter', task_id: task.id });
+      await this._runServiceOrWs(task, 'increment_counter', {}, 'upkeep/increment_counter', {});
       this._refresh();
     } catch (e) {
-      this._error = (e as Error).message;
+      this._setRowError(task.id, (e as Error).message);
     }
   };
 
   private _completeTask = async (task: Task) => {
+    this._clearRowError(task.id);
+    this._setCompleting(task.id, true);
     try {
-      await this._sendCommand({ type: 'upkeep/complete_task', task_id: task.id });
+      await this._runServiceOrWs(task, 'complete_task', {}, 'upkeep/complete_task', {});
+      this._setCompleting(task.id, false);
+      this._flashCompleted(task.id);
       this._refresh();
     } catch (e) {
-      this._error = (e as Error).message;
+      this._setCompleting(task.id, false);
+      this._setRowError(task.id, (e as Error).message);
     }
   };
 
   private _snoozeTask = async (task: Task) => {
+    this._clearRowError(task.id);
     try {
-      await this._sendCommand({
-        type: 'upkeep/snooze_task',
-        task_id: task.id,
+      await this._runServiceOrWs(task, 'snooze_task', { disable: true }, 'upkeep/snooze_task', {
         disable: true,
       });
       this._refresh();
     } catch (e) {
-      this._error = (e as Error).message;
+      this._setRowError(task.id, (e as Error).message);
     }
   };
 
   private _enableTask = async (task: Task) => {
+    this._clearRowError(task.id);
     try {
-      await this._sendCommand({ type: 'upkeep/enable_task', task_id: task.id });
+      await this._runServiceOrWs(task, 'enable_task', {}, 'upkeep/enable_task', {});
       this._refresh();
     } catch (e) {
-      this._error = (e as Error).message;
+      this._setRowError(task.id, (e as Error).message);
     }
   };
 
   private _deleteTask = async (task: Task) => {
     if (!confirm(`Delete "${task.title}"?`)) return;
+    this._clearRowError(task.id);
     try {
       await this._sendCommand({ type: 'upkeep/remove_task', task_id: task.id });
       this._refresh();
     } catch (e) {
-      this._error = (e as Error).message;
+      this._setRowError(task.id, (e as Error).message);
     }
   };
 
@@ -361,6 +437,7 @@ export class UpkeepPanel extends LitElement {
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-wrap: wrap;
       }
       .filter-bar {
         display: flex;
@@ -375,11 +452,72 @@ export class UpkeepPanel extends LitElement {
         color: var(--primary-text-color);
         font-size: 12px;
         cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .filter-chip:hover {
+        border-color: var(--primary-color);
       }
       .filter-chip.active {
         background: var(--primary-color);
-        color: var(--text-primary-color);
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
+      }
+      .btn {
+        border: none;
+        border-radius: 8px;
+        padding: 0 14px;
+        height: 32px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        transition: all 0.15s ease;
+        white-space: nowrap;
+        box-sizing: border-box;
+      }
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .btn-done {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+      }
+      .btn-done:hover:not(:disabled) {
+        filter: brightness(1.08);
+      }
+      .btn-secondary {
+        background: transparent;
+        color: var(--primary-text-color);
+        border: 1px solid var(--divider-color);
+      }
+      .btn-secondary:hover:not(:disabled) {
+        background: var(--secondary-background-color);
+        border-color: var(--primary-color);
+      }
+      .btn-header {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        border-radius: 16px;
+        padding: 0 16px;
+      }
+      .btn-icon {
+        width: 32px;
+        padding: 0;
+        background: transparent;
+        color: var(--secondary-text-color);
+        border: 1px solid var(--divider-color);
+      }
+      .btn-icon:hover:not(:disabled) {
+        color: var(--error-color);
+        border-color: var(--error-color);
+        background: var(--secondary-background-color);
+      }
+      .btn-icon ha-icon {
+        --mdc-icon-size: 18px;
       }
       .add-form {
         background: var(--card-background-color);
@@ -448,12 +586,15 @@ export class UpkeepPanel extends LitElement {
       }
       .task-row {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        gap: 8px;
         padding: 12px 16px;
         background: var(--card-background-color);
         border-radius: 12px;
         border: 1px solid var(--divider-color);
+        transition:
+          box-shadow 0.2s ease,
+          border-color 0.2s ease;
       }
       .task-row.overdue {
         border-color: var(--error-color);
@@ -464,13 +605,25 @@ export class UpkeepPanel extends LitElement {
       .task-row.snoozed {
         opacity: 0.7;
       }
+      .task-row.done-anim {
+        animation: donePop 0.4s ease;
+      }
+      .task-row-main {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
       .task-info {
         display: flex;
         align-items: center;
         gap: 12px;
+        min-width: 0;
+        flex: 1;
       }
       .task-info ha-icon {
         --mdc-icon-size: 24px;
+        flex-shrink: 0;
       }
       .task-title {
         font-weight: 500;
@@ -478,22 +631,70 @@ export class UpkeepPanel extends LitElement {
       }
       .task-meta {
         font-size: 12px;
-        color: var(--secondary-text-color);
+        font-weight: 500;
+        margin-top: 2px;
       }
       .task-actions {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .done-check {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        animation: popIn 0.3s ease;
+      }
+      .done-check ha-icon {
+        --mdc-icon-size: 28px;
+        color: var(--success-color, #4caf50);
+      }
+      .row-error {
+        font-size: 12px;
+        color: var(--error-color);
+        padding: 4px 0 0 36px;
       }
       .error {
         color: var(--error-color);
         padding: 12px;
         margin-bottom: 12px;
+        background: var(--secondary-background-color);
+        border-radius: 8px;
       }
       .empty {
         padding: 32px;
         text-align: center;
         color: var(--secondary-text-color);
+      }
+      @keyframes popIn {
+        0% {
+          transform: scale(0);
+          opacity: 0;
+        }
+        70% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes donePop {
+        0% {
+          transform: scale(1);
+        }
+        30% {
+          transform: scale(0.98);
+        }
+        60% {
+          transform: scale(1.01);
+        }
+        100% {
+          transform: scale(1);
+        }
       }
     `;
   }
