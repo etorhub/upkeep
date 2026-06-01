@@ -55,10 +55,9 @@ export class UpkeepPanel extends LitElement {
     const requestId = ++this._loadRequestId;
     this.hass.connection
       .sendMessagePromise({ type: 'upkeep/get_tasks' })
-      .then((msg: unknown) => {
+      .then((tasks: unknown) => {
         if (requestId !== this._loadRequestId) return;
-        const m = msg as { result?: Task[] };
-        this._tasks = m.result ?? [];
+        this._tasks = Array.isArray(tasks) ? (tasks as Task[]) : [];
         this._error = null;
       })
       .catch((err: Error) => {

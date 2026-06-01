@@ -3,12 +3,21 @@ import { fixture, html } from '@open-wc/testing';
 import type { HomeAssistant } from 'custom-card-helpers';
 import '../panel-src/main';
 
+type MockTask = {
+  id: string;
+  title: string;
+  task_type: string;
+  interval_value: number;
+  interval_type: string;
+  enabled: boolean;
+};
+
 describe('upkeep-panel add form', () => {
   it('renders period input as native select', async () => {
     const hass = {
       states: {},
       connection: {
-        sendMessagePromise: async () => ({ result: [] }),
+        sendMessagePromise: async () => [],
       },
     } as unknown as HomeAssistant;
 
@@ -20,8 +29,39 @@ describe('upkeep-panel add form', () => {
     expect(periodInput).toBeInstanceOf(HTMLSelectElement);
   });
 
+  it('loads tasks from unwrapped WebSocket result (Home Assistant behavior)', async () => {
+    const existingTask: MockTask = {
+      id: 'task-1',
+      title: 'Change HVAC filter',
+      task_type: 'time',
+      interval_value: 90,
+      interval_type: 'days',
+      enabled: true,
+    };
+    const hass = {
+      states: {},
+      connection: {
+        sendMessagePromise: async (msg: { type: string }) => {
+          if (msg.type === 'upkeep/get_tasks') return [existingTask];
+          return undefined;
+        },
+      },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    expect((el as any)._tasks).toEqual([existingTask]);
+
+    const taskTitles = Array.from(el.shadowRoot!.querySelectorAll('.task-title')).map((node) =>
+      node.textContent?.trim()
+    );
+    expect(taskTitles).toContain('Change HVAC filter');
+    expect(el.shadowRoot?.querySelector('.empty')).toBeNull();
+  });
+
   it('does not refresh tasks on hass updates while add form is open', async () => {
-    const sendMessagePromise = vi.fn(async () => ({ result: [] }));
+    const sendMessagePromise = vi.fn(async () => []);
     const hass = {
       states: {},
       connection: { sendMessagePromise },
@@ -40,64 +80,24 @@ describe('upkeep-panel add form', () => {
 
   it('keeps latest refresh result when submit races with older load', async () => {
     let getTasksCall = 0;
-    let resolveStale:
-      | ((value: {
-          result: Array<{
-            id: string;
-            title: string;
-            task_type: string;
-            interval_value: number;
-            interval_type: string;
-            enabled: boolean;
-          }>;
-        }) => void)
-      | undefined;
-    let resolveFresh:
-      | ((value: {
-          result: Array<{
-            id: string;
-            title: string;
-            task_type: string;
-            interval_value: number;
-            interval_type: string;
-            enabled: boolean;
-          }>;
-        }) => void)
-      | undefined;
-    const stalePromise = new Promise<{
-      result: Array<{
-        id: string;
-        title: string;
-        task_type: string;
-        interval_value: number;
-        interval_type: string;
-        enabled: boolean;
-      }>;
-    }>((resolve) => {
+    let resolveStale: ((value: MockTask[]) => void) | undefined;
+    let resolveFresh: ((value: MockTask[]) => void) | undefined;
+    const stalePromise = new Promise<MockTask[]>((resolve) => {
       resolveStale = resolve;
     });
-    const freshPromise = new Promise<{
-      result: Array<{
-        id: string;
-        title: string;
-        task_type: string;
-        interval_value: number;
-        interval_type: string;
-        enabled: boolean;
-      }>;
-    }>((resolve) => {
+    const freshPromise = new Promise<MockTask[]>((resolve) => {
       resolveFresh = resolve;
     });
 
     const sendMessagePromise = vi.fn((msg: { type: string }) => {
       if (msg.type === 'upkeep/get_tasks') {
         getTasksCall += 1;
-        if (getTasksCall === 1) return Promise.resolve({ result: [] });
+        if (getTasksCall === 1) return Promise.resolve([]);
         if (getTasksCall === 2) return stalePromise;
         return freshPromise;
       }
-      if (msg.type === 'upkeep/add_task') return Promise.resolve({ result: true });
-      return Promise.resolve({ result: [] });
+      if (msg.type === 'upkeep/add_task') return Promise.resolve({ success: true, id: 'new-task' });
+      return Promise.resolve(undefined);
     });
 
     const hass = {
@@ -115,32 +115,28 @@ describe('upkeep-panel add form', () => {
     (el as any)._loadTasks({ silent: true });
     await (el as any)._submitAdd();
 
-    resolveFresh?.({
-      result: [
-        {
-          id: 'new-task',
-          title: 'New Task',
-          task_type: 'interval',
-          interval_value: 30,
-          interval_type: 'days',
-          enabled: true,
-        },
-      ],
-    });
+    resolveFresh?.([
+      {
+        id: 'new-task',
+        title: 'New Task',
+        task_type: 'interval',
+        interval_value: 30,
+        interval_type: 'days',
+        enabled: true,
+      },
+    ]);
     await Promise.resolve();
 
-    resolveStale?.({
-      result: [
-        {
-          id: 'old-task',
-          title: 'Old Task',
-          task_type: 'interval',
-          interval_value: 90,
-          interval_type: 'days',
-          enabled: true,
-        },
-      ],
-    });
+    resolveStale?.([
+      {
+        id: 'old-task',
+        title: 'Old Task',
+        task_type: 'interval',
+        interval_value: 90,
+        interval_type: 'days',
+        enabled: true,
+      },
+    ]);
     await Promise.resolve();
 
     expect((el as any)._tasks.map((task: { id: string }) => task.id)).toEqual(['new-task']);
@@ -148,9 +144,9 @@ describe('upkeep-panel add form', () => {
 
   it('submits add task command from tracked draft fields', async () => {
     const sendMessagePromise = vi.fn((msg: { type: string }) => {
-      if (msg.type === 'upkeep/get_tasks') return Promise.resolve({ result: [] });
-      if (msg.type === 'upkeep/add_task') return Promise.resolve({ result: { success: true } });
-      return Promise.resolve({ result: [] });
+      if (msg.type === 'upkeep/get_tasks') return Promise.resolve([]);
+      if (msg.type === 'upkeep/add_task') return Promise.resolve({ success: true, id: 'hvac' });
+      return Promise.resolve(undefined);
     });
     const hass = {
       states: {},
@@ -194,10 +190,10 @@ describe('upkeep-panel add form', () => {
       if (msg.type === 'upkeep/get_tasks') {
         getTasksCall += 1;
         // First call (initial load): empty. Second call (after add): includes new task.
-        return Promise.resolve({ result: getTasksCall === 1 ? [] : [newTask] });
+        return Promise.resolve(getTasksCall === 1 ? [] : [newTask]);
       }
-      if (msg.type === 'upkeep/add_task') return Promise.resolve({ result: { success: true } });
-      return Promise.resolve({ result: [] });
+      if (msg.type === 'upkeep/add_task') return Promise.resolve({ success: true, id: newTask.id });
+      return Promise.resolve(undefined);
     });
     const hass = {
       states: {},
@@ -217,21 +213,21 @@ describe('upkeep-panel add form', () => {
 
     expect((el as any)._tasks).toEqual([newTask]);
 
-    const taskTitles = Array.from(el.shadowRoot!.querySelectorAll('.task-title')).map((el) =>
-      el.textContent?.trim()
+    const taskTitles = Array.from(el.shadowRoot!.querySelectorAll('.task-title')).map((node) =>
+      node.textContent?.trim()
     );
     expect(taskTitles).toContain('HVAC Filter');
   });
 
   it('shows empty state immediately rather than a blank area when task list is empty', async () => {
     // Simulate a slow get_tasks response — the empty state must be visible before it resolves.
-    let resolveLoad: ((v: { result: never[] }) => void) | undefined;
-    const pendingLoad = new Promise<{ result: never[] }>((resolve) => {
+    let resolveLoad: ((v: never[]) => void) | undefined;
+    const pendingLoad = new Promise<never[]>((resolve) => {
       resolveLoad = resolve;
     });
     const sendMessagePromise = vi.fn((msg: { type: string }) => {
       if (msg.type === 'upkeep/get_tasks') return pendingLoad;
-      return Promise.resolve({ result: [] });
+      return Promise.resolve(undefined);
     });
     const hass = {
       states: {},
@@ -246,7 +242,7 @@ describe('upkeep-panel add form', () => {
     expect(emptyDiv).not.toBeNull();
 
     // Resolve to confirm task list updates correctly afterwards.
-    resolveLoad?.({ result: [] });
+    resolveLoad?.([]);
     await Promise.resolve();
     await (el as any).updateComplete;
 
