@@ -71,6 +71,21 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 
 The Lovelace card is auto-registered when the integration is configured. Add the card to your dashboard via **Add Card → Upkeep Card**.
 
+### Sidebar panel
+
+After you add the Upkeep integration, a **sidebar panel** is registered automatically. You do not add it from **Settings → Dashboards** like a Lovelace view.
+
+1. Complete **Settings → Devices & Services → Add Integration → Upkeep** (or use the HACS install flow above).
+2. Look for **Upkeep** in the left sidebar (default icon: hammer-wrench).
+3. Or open `https://<your-home-assistant>/upkeep` directly in the browser.
+
+To change visibility or labeling, go to **Settings → Devices & Services → Upkeep → Configure**:
+
+- **Admins only** — when enabled, only administrator accounts see the sidebar item (off by default for new setups).
+- **Sidebar title** / **Sidebar icon** — customize the name and MDI icon in the sidebar.
+
+Install from a [GitHub release](https://github.com/etorhub/upkeep/releases) (HACS `zip_release`) so `panel/dist/main.js` is included. If the panel is missing from the sidebar and logs mention a missing panel file, upgrade to the latest release.
+
 ---
 
 ## Integration Structure

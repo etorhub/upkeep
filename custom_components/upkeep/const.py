@@ -69,7 +69,7 @@ SERVICE_ENABLE_TASK_SCHEMA = vol.Schema(
 
 CONFIG_STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Optional("admin_only", default=True): cv.boolean,
+        vol.Optional("admin_only", default=False): cv.boolean,
         vol.Optional("sidebar_title", default=PANEL_TITLE): cv.string,
         vol.Optional("sidebar_icon", default=PANEL_ICON): cv.string,
     }
@@ -83,7 +83,7 @@ def get_options_schema(config_entry: ConfigEntry) -> vol.Schema:
             vol.Optional(
                 "admin_only",
                 default=config_entry.options.get(
-                    "admin_only", config_entry.data.get("admin_only", True)
+                    "admin_only", config_entry.data.get("admin_only", False)
                 ),
             ): cv.boolean,
             vol.Optional(
