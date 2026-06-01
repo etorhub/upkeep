@@ -19,8 +19,13 @@ function getNestedValue(obj: unknown, path: string): string | undefined {
   return typeof current === 'string' ? current : undefined;
 }
 
-export function localize(key: string, search?: string, replace?: string): string {
-  const lang = (localStorage.getItem('selectedLanguage') || 'en')
+export function localize(
+  key: string,
+  search?: string,
+  replace?: string,
+  language?: string
+): string {
+  const lang = (language || localStorage.getItem('selectedLanguage') || 'en')
     .replace(/['"]+/g, '')
     .replace('-', '_');
 
