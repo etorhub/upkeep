@@ -41,6 +41,7 @@
     "name": "Nome",
     "due_date": "Data di scadenza",
     "all": "Tutte",
+    "snoozed": "Posticipata",
     "auto_discover": "Scopri automaticamente le entità"
   }
 }

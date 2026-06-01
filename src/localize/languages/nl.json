@@ -41,6 +41,7 @@
     "name": "Naam",
     "due_date": "Vervaldatum",
     "all": "Alle",
+    "snoozed": "Uitgesteld",
     "auto_discover": "Entiteiten automatisch ontdekken"
   }
 }

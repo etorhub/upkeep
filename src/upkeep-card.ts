@@ -49,7 +49,7 @@ export class HomeMaintenanceCard extends LitElement {
     DEFAULTS.filter;
 
   public setConfig(config: HomeMaintenanceCardConfig): void {
-    if (!config) throw new Error(localize('common.invalid_configuration'));
+    if (!config) return;
     this._config = { ...config };
     this._activeFilter = config.filter ?? DEFAULTS.filter;
   }
@@ -64,6 +64,7 @@ export class HomeMaintenanceCard extends LitElement {
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     if (!oldHass) return true;
+    if (!this._config) return true;
 
     const entityIds = discoverEntities(
       this.hass,
@@ -142,6 +143,24 @@ export class HomeMaintenanceCard extends LitElement {
     `;
   }
 
+  private _filterLabel(
+    filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed',
+    lang?: string
+  ): string {
+    switch (filter) {
+      case 'all':
+        return localize('editor.all', undefined, undefined, lang);
+      case 'snoozed':
+        return localize('editor.snoozed', undefined, undefined, lang);
+      case 'overdue':
+        return localize('card.overdue', undefined, undefined, lang);
+      case 'due_soon':
+        return localize('card.due_soon', undefined, undefined, lang);
+      case 'on_track':
+        return localize('card.on_track', undefined, undefined, lang);
+    }
+  }
+
   private _renderFilterBar(): TemplateResult {
     const filters = ['all', 'overdue', 'due_soon', 'on_track', 'snoozed'] as const;
     const lang = this.hass?.locale?.language ?? this.hass?.language;
@@ -155,7 +174,7 @@ export class HomeMaintenanceCard extends LitElement {
                 this._activeFilter = f;
               }}
             >
-              ${localize(`editor.${f}`, undefined, undefined, lang)}
+              ${this._filterLabel(f, lang)}
             </button>
           `
         )}

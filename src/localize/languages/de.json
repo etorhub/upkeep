@@ -41,6 +41,7 @@
     "name": "Name",
     "due_date": "Fälligkeitsdatum",
     "all": "Alle",
+    "snoozed": "Pausiert",
     "auto_discover": "Entitäten automatisch erkennen"
   }
 }

@@ -41,6 +41,7 @@
     "name": "Nome",
     "due_date": "Data de vencimento",
     "all": "Todas",
+    "snoozed": "Adiada",
     "auto_discover": "Descobrir entidades automaticamente"
   }
 }
