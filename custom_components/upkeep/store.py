@@ -192,6 +192,12 @@ class TaskStore:
                     entity.entity_id, labels=set(updated["labels"])
                 )
 
+        if "title" in updated:
+            entity._attr_name = task.title
+            registry = entity_registry.async_get(self.hass)
+            if registry.async_get(entity.entity_id):
+                registry.async_update_entity(entity.entity_id, name=task.title)
+
         entity.async_schedule_update_ha_state(force_refresh=True)
         self._save()
 

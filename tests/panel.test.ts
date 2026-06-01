@@ -55,10 +55,10 @@ describe('upkeep-panel add form', () => {
     } as unknown as HomeAssistant;
 
     const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
-    (el as any)._showAddForm = true;
+    (el as any)._formMode = 'add';
     await (el as any).updateComplete;
 
-    const periodInput = el.shadowRoot?.querySelector('#add-period');
+    const periodInput = el.shadowRoot?.querySelector('.task-form select');
     expect(periodInput).toBeInstanceOf(HTMLSelectElement);
   });
 
@@ -104,7 +104,7 @@ describe('upkeep-panel add form', () => {
     await (el as any).updateComplete;
     const before = sendMessagePromise.mock.calls.length;
 
-    (el as any)._showAddForm = true;
+    (el as any)._formMode = 'add';
     (el as any).hass = { ...hass, states: { ...hass.states } };
     await (el as any).updateComplete;
 
@@ -141,7 +141,7 @@ describe('upkeep-panel add form', () => {
     const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
     await (el as any).updateComplete;
 
-    (el as any)._showAddForm = true;
+    (el as any)._formMode = 'add';
     (el as any)._draftTitle = 'New Task';
     (el as any)._draftInterval = '30';
     (el as any)._draftPeriod = 'days';
@@ -189,9 +189,10 @@ describe('upkeep-panel add form', () => {
     const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
     await (el as any).updateComplete;
 
-    (el as any)._showAddForm = true;
+    (el as any)._formMode = 'add';
     (el as any)._draftTitle = 'HVAC Filter';
     (el as any)._draftDescription = 'Replace filter';
+    (el as any)._draftIcon = 'mdi:air-filter';
     (el as any)._draftInterval = '60';
     (el as any)._draftPeriod = 'days';
 
@@ -202,11 +203,12 @@ describe('upkeep-panel add form', () => {
         type: 'upkeep/add_task',
         title: 'HVAC Filter',
         description: 'Replace filter',
+        icon: 'mdi:air-filter',
         interval_value: 60,
         interval_type: 'days',
       })
     );
-    expect((el as any)._showAddForm).toBe(false);
+    expect((el as any)._formMode).toBe('none');
   });
 
   it('shows newly added task in the list after successful submit', async () => {
@@ -236,7 +238,7 @@ describe('upkeep-panel add form', () => {
     const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
     await (el as any).updateComplete;
 
-    (el as any)._showAddForm = true;
+    (el as any)._formMode = 'add';
     (el as any)._draftTitle = 'HVAC Filter';
     (el as any)._draftInterval = '60';
     (el as any)._draftPeriod = 'days';
@@ -280,6 +282,72 @@ describe('upkeep-panel add form', () => {
     await (el as any).updateComplete;
 
     expect(el.shadowRoot?.querySelector('.empty')).not.toBeNull();
+  });
+
+  it('submits update_task when saving edit form', async () => {
+    const task = {
+      id: 'task-1',
+      title: 'HVAC Filter',
+      description: 'Old desc',
+      icon: 'mdi:calendar-check',
+      task_type: 'time',
+      interval_value: 90,
+      interval_type: 'days',
+      enabled: true,
+    };
+    const sendMessagePromise = vi.fn((msg: { type: string }) => {
+      if (msg.type === 'upkeep/get_tasks') return Promise.resolve([task]);
+      if (msg.type === 'upkeep/update_task') return Promise.resolve({ success: true });
+      return Promise.resolve(undefined);
+    });
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    (el as any)._formMode = 'edit';
+    (el as any)._editingTaskId = 'task-1';
+    (el as any)._draftTitle = 'HVAC Filter Updated';
+    (el as any)._draftDescription = 'New desc';
+    (el as any)._draftIcon = 'mdi:air-filter';
+    (el as any)._draftTaskType = 'time';
+    (el as any)._draftInterval = '60';
+    (el as any)._draftPeriod = 'weeks';
+
+    await (el as any)._submitEdit();
+
+    expect(sendMessagePromise).toHaveBeenCalledWith({
+      type: 'upkeep/update_task',
+      task_id: 'task-1',
+      updates: {
+        title: 'HVAC Filter Updated',
+        description: 'New desc',
+        icon: 'mdi:air-filter',
+        interval_value: 60,
+        interval_type: 'weeks',
+      },
+    });
+    expect((el as any)._formMode).toBe('none');
+    expect((el as any)._editingTaskId).toBeNull();
+  });
+
+  it('cancelForm clears edit mode', async () => {
+    const hass = {
+      states: {},
+      connection: {
+        sendMessagePromise: async () => [],
+      },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    (el as any)._formMode = 'edit';
+    (el as any)._editingTaskId = 'task-1';
+    (el as any)._cancelForm();
+    expect((el as any)._formMode).toBe('none');
+    expect((el as any)._editingTaskId).toBeNull();
   });
 });
 
@@ -463,6 +531,10 @@ describe('upkeep-panel task actions', () => {
 
     expect(el.shadowRoot?.querySelector('ha-button')).toBeNull();
     expect(el.shadowRoot?.querySelector('.btn-done')?.textContent?.trim()).toBe('Complete');
-    expect(el.shadowRoot?.querySelector('.btn-secondary')?.textContent?.trim()).toBe('Snooze');
+    const secondaryButtons = Array.from(el.shadowRoot!.querySelectorAll('.btn-secondary')).map(
+      (node) => node.textContent?.trim()
+    );
+    expect(secondaryButtons).toContain('Edit');
+    expect(secondaryButtons).toContain('Snooze');
   });
 });
