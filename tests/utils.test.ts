@@ -17,6 +17,7 @@ function mockHassEntity(overrides: Partial<Record<string, unknown>> = {}): Recor
     next_due: '2025-04-01T00:00:00',
     interval_value: 90,
     interval_type: 'days',
+    task_type: 'time',
   };
   const { attributes: attrOverrides, ...rest } = overrides;
   return {
@@ -40,9 +41,15 @@ describe('isMaintenanceEntity', () => {
     expect(isMaintenanceEntity(mockHassEntity({ entity_id: 'sensor.other' }) as any)).toBe(false);
   });
 
-  it('returns false when missing last_performed', () => {
+  it('returns true when task_type present but last_performed is missing', () => {
     const e = mockHassEntity() as any;
     delete e.attributes.last_performed;
+    expect(isMaintenanceEntity(e)).toBe(true);
+  });
+
+  it('returns false when task_type is missing (non-Upkeep entity)', () => {
+    const e = mockHassEntity({ attributes: { progress: 50 } }) as any;
+    delete e.attributes.task_type;
     expect(isMaintenanceEntity(e)).toBe(false);
   });
 });

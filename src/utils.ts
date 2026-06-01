@@ -10,6 +10,9 @@ import {
 export function isMaintenanceEntity(stateObj: HassEntity): boolean {
   if (!stateObj.entity_id.startsWith('binary_sensor.')) return false;
   const attrs = stateObj.attributes || {};
+  // Require task_type as Upkeep-specific marker to avoid matching entities from
+  // other integrations (e.g. TJPoorman/home_maintenance) that share similar attributes.
+  if (!('task_type' in attrs)) return false;
   const hasTimeAttrs = HOME_MAINTENANCE_ATTRIBUTES.every((attr) => attr in attrs);
   const hasAltAttrs = HOME_MAINTENANCE_ATTRIBUTES_ALT.some((attr) => attr in attrs);
   return hasTimeAttrs || hasAltAttrs;
