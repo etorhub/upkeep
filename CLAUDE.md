@@ -62,7 +62,6 @@ src/
 npm install
 npx lefthook install   # Optional: git hooks
 npm start              # Dev server on :5000
-npm run storybook      # Storybook on :6006
 ```
 
 **Pre-commit:** lint, typecheck, test, format check (no committed bundles)

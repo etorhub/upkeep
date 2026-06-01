@@ -1,5 +1,4 @@
 node_modules/
-storybook-static/
 dist/
 custom_components/upkeep/www/
 custom_components/upkeep/panel/dist/
