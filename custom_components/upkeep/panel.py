@@ -25,7 +25,12 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Register custom panel for Upkeep."""
     panel_file = Path(__file__).parent / PANEL_FILENAME
     if not panel_file.is_file():
-        _LOGGER.warning("Panel file not found at %s", panel_file)
+        _LOGGER.error(
+            "Upkeep sidebar panel not registered: missing %s. "
+            "Reinstall from the latest HACS release or ensure panel/dist/main.js exists, "
+            "then reload the integration.",
+            panel_file,
+        )
         return
 
     static_path = panel_file.parent

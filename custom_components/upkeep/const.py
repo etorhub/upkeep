@@ -17,7 +17,7 @@ INTERVAL_TYPES = ["days", "weeks", "months"]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-PANEL_FILENAME = "panel/main.js"
+PANEL_FILENAME = "panel/dist/main.js"
 PANEL_URL = "upkeep"
 PANEL_API_PATH = "/upkeep_static"
 PANEL_API_URL = PANEL_API_PATH + "/main.js"
