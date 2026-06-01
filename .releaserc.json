@@ -47,11 +47,17 @@
       }
     ],
     [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "node scripts/bump-manifest-version.mjs ${nextRelease.version} && node scripts/package-integration-zip.mjs"
+      }
+    ],
+    [
       "@semantic-release/github",
       {
         "assets": [
-          { "path": "dist/upkeep-card.js", "label": "HACS distribution" },
-          { "path": "custom_components/upkeep/panel/dist/main.js", "name": "upkeep-panel.js", "label": "Panel" }
+          { "path": "upkeep.zip", "label": "HACS integration" },
+          { "path": "dist/upkeep-card.js", "label": "Lovelace card (standalone)" }
         ]
       }
     ]

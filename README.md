@@ -64,9 +64,10 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 
 ### Manual
 
-1. Copy the `custom_components/upkeep` folder to your `config/custom_components/` directory.
-2. Restart Home Assistant.
-3. Go to **Settings → Devices & Services → Add Integration** and add **Upkeep**.
+1. Run `npm ci && npm run build` so `www/upkeep-card.js` and `panel/dist/main.js` exist.
+2. Copy the `custom_components/upkeep` folder to your `config/custom_components/` directory.
+3. Restart Home Assistant.
+4. Go to **Settings → Devices & Services → Add Integration** and add **Upkeep**.
 
 The Lovelace card is auto-registered when the integration is configured. Add the card to your dashboard via **Add Card → Upkeep Card**.
 
@@ -99,6 +100,8 @@ upkeep/
 ### Release workflow
 
 Releases are created automatically on every push to `main` using [semantic-release](https://github.com/semantic-release/semantic-release). Use [Conventional Commits](https://www.conventionalcommits.org/) for release notes.
+
+CI builds the Lovelace card and sidebar panel, packages them into `upkeep.zip`, and attaches that zip to each GitHub release. HACS installs the integration from that release zip (`zip_release` in `hacs.json`); bundled JavaScript is not committed on `main`. For local development, run `npm run build` before copying `custom_components/upkeep` manually.
 
 For custom repositories, add via **HACS → Integrations → + → Custom repositories** with your GitHub URL.
 
@@ -200,12 +203,9 @@ Stories cover all view modes (grid, list, compact), progress types (ring, bar), 
 ### Git Hooks (Lefthook)
 
 - **commit-msg:** Validates commit message format (Conventional Commits)
-- **pre-commit:** lint, typecheck, test, format check, build and stage dist
-- **pre-push:** full build
+- **pre-commit:** lint, typecheck, test, format check
 
 **Commit format:** All commits must use [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `docs:`). Use `npm run commit` for an interactive wizard.
-
-**Note:** The pre-commit hook runs `npm run build` and stages the built files, so they are included in every commit automatically.
 
 ```bash
 npx lefthook install   # Install hooks

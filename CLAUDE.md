@@ -65,15 +65,15 @@ npm start              # Dev server on :5000
 npm run storybook      # Storybook on :6006
 ```
 
-**Pre-commit:** lint, typecheck, test, format check, build, stage `dist/`
+**Pre-commit:** lint, typecheck, test, format check (no committed bundles)
 
 **Commits:** Use [Conventional Commits](https://www.conventionalcommits.org/) — `npm run commit` for wizard.
 
 ## HACS
 
-- **Category:** Plugin (Frontend)
-- **Output:** `dist/upkeep-card.js`
-- **hacs.json:** name, filename, render_readme
+- **Category:** Integration (includes Lovelace card in `www/`)
+- **Release:** CI builds and publishes `upkeep.zip` (`zip_release` in `hacs.json`)
+- **Local build outputs:** `custom_components/upkeep/www/upkeep-card.js`, `panel/dist/main.js`
 
 ## Contributing
 

@@ -3,5 +3,6 @@ storybook-static/
 dist/
 custom_components/upkeep/www/
 custom_components/upkeep/panel/dist/
+upkeep.zip
 .DS_Store
 *.log
