@@ -4,11 +4,16 @@
     "step": {
       "user": {
         "title": "Configure Upkeep",
-        "description": "Set up the Upkeep integration.",
+        "description": "Upkeep adds itself to the Home Assistant sidebar when configured.",
         "data": {
-          "admin_only": "Restrict panel to admins only",
-          "sidebar_title": "The name shown in the sidebar for this integration.",
-          "sidebar_icon": "Sidebar icon (e.g. mdi:hammer-wrench)"
+          "admin_only": "Admins only",
+          "sidebar_title": "Sidebar title",
+          "sidebar_icon": "Sidebar icon"
+        },
+        "data_description": {
+          "admin_only": "When enabled, only administrators see Upkeep in the sidebar. Disable to show it to all users.",
+          "sidebar_title": "Name shown in the left sidebar.",
+          "sidebar_icon": "MDI icon for the sidebar item (for example mdi:hammer-wrench)."
         }
       }
     },
@@ -19,10 +24,16 @@
   "options": {
     "step": {
       "init": {
+        "description": "Upkeep adds itself to the Home Assistant sidebar when configured.",
         "data": {
-          "admin_only": "Restrict panel to admins only",
-          "sidebar_title": "The name shown in the sidebar for this integration.",
+          "admin_only": "Admins only",
+          "sidebar_title": "Sidebar title",
           "sidebar_icon": "Sidebar icon"
+        },
+        "data_description": {
+          "admin_only": "When enabled, only administrators see Upkeep in the sidebar. Disable to show it to all users.",
+          "sidebar_title": "Name shown in the left sidebar.",
+          "sidebar_icon": "MDI icon for the sidebar item (for example mdi:hammer-wrench)."
         }
       }
     }
