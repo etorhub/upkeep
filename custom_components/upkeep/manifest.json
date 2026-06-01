@@ -5,9 +5,9 @@
   "codeowners": ["@etorhub"],
   "config_flow": true,
   "dependencies": ["http", "panel_custom", "tag"],
-  "documentation": "https://github.com/etorhub/home-maintenance-card",
+  "documentation": "https://github.com/etorhub/upkeep",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/etorhub/home-maintenance-card/issues",
+  "issue_tracker": "https://github.com/etorhub/upkeep/issues",
   "requirements": ["python-dateutil>=2.8.2"],
   "version": "1.0.0"
 }

@@ -2,7 +2,7 @@
 
 A full [Home Assistant](https://www.home-assistant.io/) integration for recurring maintenance tasks, with a sidebar panel for management and a Lovelace card for dashboards. Replaces the unmaintained [TJPoorman/home_maintenance](https://github.com/TJPoorman/home_maintenance) integration.
 
-[![Open your Home Assistant instance and show the add repository dialog for this repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=etorhub&repository=home-maintenance-card&category=integration)
+[![Open your Home Assistant instance and show the add repository dialog for this repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=etorhub&repository=upkeep&category=integration)
 
 ---
 
@@ -11,11 +11,11 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript&logoColor=white)
 ![Lit](https://img.shields.io/badge/Lit-3.3-324FFF?logo=lit&logoColor=white)
 ![Rollup](https://img.shields.io/badge/Rollup-4.x-EC4A3F?logo=rollup.js&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-2.x-6E9F18?logo=vitest&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-3.x-6E9F18?logo=vitest&logoColor=white)
 ![ESLint](https://img.shields.io/badge/ESLint-9.x-4B32C3?logo=eslint&logoColor=white)
 ![Prettier](https://img.shields.io/badge/Prettier-3.x-1A2B34?logo=prettier&logoColor=white)
 ![Home Assistant](https://img.shields.io/badge/Home_Assistant-Lovelace-41BDF5?logo=home-assistant&logoColor=white)
-![HACS](https://img.shields.io/badge/HACS-Plugin-41BDF5)
+![HACS](https://img.shields.io/badge/HACS-Integration-41BDF5)
 
 | Layer            | Technology                                                                                                                                                               |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -47,7 +47,7 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 - **One-tap completion** — Mark tasks as done from the card.
 - **Multiple layouts** — Grid, list, or compact views.
 - **Sorting & filtering** — Sort by urgency, name, or due date. Filter by status including snoozed.
-- **Localization** — English, Spanish, Catalan, and more.
+- **Localization** — English, Spanish, Catalan, French, German, Italian, Dutch, and Portuguese.
 
 ---
 
@@ -165,7 +165,7 @@ columns: 3
 | `view_mode`        | string   | `grid`            | `grid`, `list`, or `compact`                |
 | `progress_type`    | string   | `ring`            | `ring` (circular) or `bar` (horizontal)     |
 | `sort_by`          | string   | `urgency`         | `urgency`, `name`, or `due_date`            |
-| `filter`           | string   | `all`             | `all`, `overdue`, `due_soon`, or `on_track` |
+| `filter`           | string   | `all`             | `all`, `overdue`, `due_soon`, `on_track`, or `snoozed` |
 | `due_soon_days`    | number   | `7`               | Days threshold for "due soon" status        |
 | `show_header`      | boolean  | `true`            | Show the summary header with status counts  |
 | `show_filter_bar`  | boolean  | `false`           | Show interactive filter chips               |
@@ -178,9 +178,9 @@ columns: 3
 ### Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/etorhub/home-maintenance-card.git
-cd home-maintenance-card  # or upkeep if repo is renamed
+# Clone the repository (Node.js >= 24)
+git clone https://github.com/etorhub/upkeep.git
+cd upkeep
 
 # Install dependencies
 npm install
@@ -194,7 +194,8 @@ npx lefthook install
 | Command                   | Description                                    |
 | ------------------------- | ---------------------------------------------- |
 | `npm start`               | Dev build with watch + local server on `:5000` |
-| `npm run build`           | Production build to `dist/`                    |
+| `npm run build`           | Build card + panel into `dist/` and `custom_components/upkeep/` |
+| `npm run package:integration` | Create `upkeep.zip` for release packaging (CI) |
 | `npm run lint`            | Run ESLint                                     |
 | `npm run lint:fix`        | ESLint with auto-fix                           |
 | `npm run format`          | Prettier format                                |

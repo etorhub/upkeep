@@ -14,7 +14,7 @@ We release patches for security vulnerabilities for the following versions:
 If you discover a security vulnerability, please report it responsibly:
 
 1. **Do not** open a public issue for security vulnerabilities.
-2. Open a [Security Advisory](https://github.com/etorhub/home-maintenance-card/security/advisories/new) on GitHub, or contact the maintainers privately if you prefer.
+2. Open a [Security Advisory](https://github.com/etorhub/upkeep/security/advisories/new) on GitHub, or contact the maintainers privately if you prefer.
 3. Include a clear description of the vulnerability, steps to reproduce, and potential impact.
 4. Allow reasonable time for a fix before any public disclosure.
 
