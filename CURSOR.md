@@ -52,7 +52,6 @@ src/
 | -------------------- | ----------- |
 | `npm start`          | Dev build + watch + serve on :5000 |
 | `npm run build`      | Production build to `dist/` |
-| `npm run storybook`  | Storybook on :6006 |
 | `npm run test`       | Vitest |
 | `npm run lint`       | ESLint |
 | `npm run typecheck`  | TypeScript check |
