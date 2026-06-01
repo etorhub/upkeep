@@ -1,5 +1,4 @@
-import { createWriteStream, cpSync, existsSync, mkdtempSync, rmSync } from 'fs';
-import { tmpdir } from 'os';
+import { createWriteStream, existsSync, rmSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -19,18 +18,9 @@ for (const relativePath of requiredBundles) {
   }
 }
 
-const stagingDir = mkdtempSync(join(tmpdir(), 'upkeep-zip-'));
-
-try {
-  const packagedIntegrationDir = join(stagingDir, 'custom_components', 'upkeep');
-  cpSync(integrationDir, packagedIntegrationDir, { recursive: true });
-
-  rmSync(zipPath, { force: true });
-  await createZip(stagingDir, zipPath);
-  console.log(`Created ${zipPath}`);
-} finally {
-  rmSync(stagingDir, { recursive: true, force: true });
-}
+rmSync(zipPath, { force: true });
+await createZip(integrationDir, zipPath);
+console.log(`Created ${zipPath}`);
 
 function createZip(sourceDir, destination) {
   return new Promise((resolve, reject) => {
@@ -40,7 +30,9 @@ function createZip(sourceDir, destination) {
     output.on('close', resolve);
     archive.on('error', reject);
     archive.pipe(output);
-    archive.directory(join(sourceDir, 'custom_components'), 'custom_components');
+    // HACS extracts into config/custom_components/<domain>/ — zip root must be
+    // integration files, not another custom_components/upkeep/ prefix.
+    archive.directory(sourceDir, false);
     void archive.finalize();
   });
 }
