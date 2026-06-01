@@ -9,6 +9,9 @@ export type { Task } from './types';
 
 const DUE_SOON_DAYS = 7;
 const COMPLETE_FLASH_MS = 1500;
+const DEFAULT_ICON = 'mdi:calendar-check';
+
+type FormMode = 'none' | 'add' | 'edit';
 
 @customElement('upkeep-panel')
 export class UpkeepPanel extends LitElement {
@@ -17,19 +20,23 @@ export class UpkeepPanel extends LitElement {
 
   @state() private _tasks: Task[] = [];
   @state() private _error: string | null = null;
-  @state() private _showAddForm = false;
+  @state() private _formMode: FormMode = 'none';
+  @state() private _editingTaskId: string | null = null;
   @state() private _filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed' = 'all';
   @state() private _draftTitle = '';
   @state() private _draftDescription = '';
+  @state() private _draftIcon = DEFAULT_ICON;
   @state() private _draftInterval = '90';
   @state() private _draftPeriod = 'days';
+  @state() private _draftTaskType: 'time' | 'frequency' = 'time';
+  @state() private _draftFrequencyTarget = '10';
   @state() private _completingIds: string[] = [];
   @state() private _justCompletedIds: string[] = [];
   @state() private _rowErrors: Record<string, string> = {};
   private _loadRequestId = 0;
 
   updated(changedProps: Map<string, unknown>): void {
-    if (changedProps.has('hass') && this.hass?.connection && !this._showAddForm) {
+    if (changedProps.has('hass') && this.hass?.connection && this._formMode === 'none') {
       this._loadTasks();
     }
   }
@@ -152,14 +159,14 @@ export class UpkeepPanel extends LitElement {
               )}
             </div>
             <button class="btn btn-header" @click=${() => this._toggleAddForm()}>
-              ${this._showAddForm ? 'Cancel' : 'Add Task'}
+              ${this._formMode === 'add' ? 'Cancel' : 'Add Task'}
             </button>
           </div>
         </div>
 
         ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
 
-        ${this._showAddForm ? this._renderAddForm() : nothing}
+        ${this._formMode !== 'none' ? this._renderTaskForm() : nothing}
 
         <div class="task-list">
           ${tasks.length === 0
@@ -170,48 +177,81 @@ export class UpkeepPanel extends LitElement {
     `;
   }
 
-  private _renderAddForm() {
+  private _renderTaskForm() {
+    const isEdit = this._formMode === 'edit';
+    const isFrequency = this._draftTaskType === 'frequency';
+
     return html`
-      <div class="add-form">
-        <h3>Add Task</h3>
+      <div class="task-form">
+        <h3>${isEdit ? 'Edit Task' : 'Add Task'}</h3>
+        <div class="form-row icon-field">
+          <label class="form-field-label icon-field-label">
+            <span>Icon</span>
+            <div class="icon-field-row">
+              <ha-icon class="icon-preview" .icon=${this._draftIcon}></ha-icon>
+              <ha-icon-picker
+                .hass=${this.hass}
+                .value=${this._draftIcon}
+                @value-changed=${this._onIconChanged}
+              ></ha-icon-picker>
+            </div>
+          </label>
+        </div>
         <div class="form-row">
           <label class="form-field-label">
             <span>Title</span>
             <input
               type="text"
-              id="add-title"
               .value=${this._draftTitle}
               @input=${this._onTitleInput}
               placeholder="e.g. Change air filter"
             />
           </label>
         </div>
-        <div class="form-row">
-          <label class="form-field-label">
-            <span>Interval</span>
-            <input
-              type="number"
-              id="add-interval"
-              .value=${this._draftInterval}
-              @input=${this._onIntervalInput}
-              min="1"
-            />
-          </label>
-          <label class="period-select-label">
-            <span>Period</span>
-            <select id="add-period" .value=${this._draftPeriod} @change=${this._onPeriodChange}>
-              <option value="days" ?selected=${this._draftPeriod === 'days'}>Days</option>
-              <option value="weeks" ?selected=${this._draftPeriod === 'weeks'}>Weeks</option>
-              <option value="months" ?selected=${this._draftPeriod === 'months'}>Months</option>
-            </select>
-          </label>
-        </div>
+        ${isFrequency
+          ? html`
+              <div class="form-row">
+                <label class="form-field-label">
+                  <span>Task type</span>
+                  <input type="text" readonly disabled value="Frequency (uses)" />
+                </label>
+                <label class="form-field-label">
+                  <span>Target uses</span>
+                  <input
+                    type="number"
+                    .value=${this._draftFrequencyTarget}
+                    @input=${this._onFrequencyTargetInput}
+                    min="1"
+                  />
+                </label>
+              </div>
+            `
+          : html`
+              <div class="form-row">
+                <label class="form-field-label">
+                  <span>Interval</span>
+                  <input
+                    type="number"
+                    .value=${this._draftInterval}
+                    @input=${this._onIntervalInput}
+                    min="1"
+                  />
+                </label>
+                <label class="period-select-label">
+                  <span>Period</span>
+                  <select .value=${this._draftPeriod} @change=${this._onPeriodChange}>
+                    <option value="days" ?selected=${this._draftPeriod === 'days'}>Days</option>
+                    <option value="weeks" ?selected=${this._draftPeriod === 'weeks'}>Weeks</option>
+                    <option value="months" ?selected=${this._draftPeriod === 'months'}>Months</option>
+                  </select>
+                </label>
+              </div>
+            `}
         <div class="form-row">
           <label class="form-field-label">
             <span>Description (optional)</span>
             <input
               type="text"
-              id="add-desc"
               .value=${this._draftDescription}
               @input=${this._onDescriptionInput}
               placeholder="Optional details..."
@@ -219,24 +259,57 @@ export class UpkeepPanel extends LitElement {
           </label>
         </div>
         <div class="form-actions">
-          <button class="btn btn-done" @click=${this._submitAdd}>Add Task</button>
+          ${isEdit
+            ? html`
+                <button class="btn btn-secondary" @click=${this._cancelForm}>Cancel</button>
+                <button class="btn btn-done" @click=${this._submitEdit}>Save</button>
+              `
+            : html` <button class="btn btn-done" @click=${this._submitAdd}>Add Task</button> `}
         </div>
       </div>
     `;
   }
 
   private _toggleAddForm(): void {
-    this._showAddForm = !this._showAddForm;
-    if (!this._showAddForm) {
-      this._resetDraft();
+    if (this._formMode === 'add') {
+      this._cancelForm();
+      return;
     }
+    this._formMode = 'add';
+    this._editingTaskId = null;
+    this._resetDraftFields();
   }
 
-  private _resetDraft(): void {
+  private _cancelForm(): void {
+    this._formMode = 'none';
+    this._editingTaskId = null;
+    this._resetDraftFields();
+  }
+
+  private _startEdit(task: Task): void {
+    this._formMode = 'edit';
+    this._editingTaskId = task.id;
+    this._loadDraftFromTask(task);
+  }
+
+  private _loadDraftFromTask(task: Task): void {
+    this._draftTitle = task.title;
+    this._draftDescription = task.description ?? '';
+    this._draftIcon = task.icon || DEFAULT_ICON;
+    this._draftTaskType = task.task_type === 'frequency' ? 'frequency' : 'time';
+    this._draftInterval = String(task.interval_value ?? 90);
+    this._draftPeriod = task.interval_type ?? 'days';
+    this._draftFrequencyTarget = String(task.frequency_target ?? 10);
+  }
+
+  private _resetDraftFields(): void {
     this._draftTitle = '';
     this._draftDescription = '';
+    this._draftIcon = DEFAULT_ICON;
     this._draftInterval = '90';
     this._draftPeriod = 'days';
+    this._draftTaskType = 'time';
+    this._draftFrequencyTarget = '10';
   }
 
   private _onTitleInput = (ev: Event): void => {
@@ -259,6 +332,16 @@ export class UpkeepPanel extends LitElement {
     this._draftPeriod = target?.value ?? 'days';
   };
 
+  private _onIconChanged = (ev: CustomEvent): void => {
+    const value = (ev.detail as { value?: string })?.value;
+    this._draftIcon = value?.trim() || DEFAULT_ICON;
+  };
+
+  private _onFrequencyTargetInput = (ev: Event): void => {
+    const target = ev.target as HTMLInputElement;
+    this._draftFrequencyTarget = target?.value ?? '10';
+  };
+
   private _submitAdd = async () => {
     const title = this._draftTitle.trim();
     if (!title) return;
@@ -269,11 +352,43 @@ export class UpkeepPanel extends LitElement {
         type: 'upkeep/add_task',
         title,
         description: this._draftDescription.trim() || undefined,
+        icon: this._draftIcon,
         interval_value: interval,
         interval_type,
       });
-      this._showAddForm = false;
-      this._resetDraft();
+      this._cancelForm();
+      this._refresh();
+    } catch (e) {
+      this._error = (e as Error).message;
+    }
+  };
+
+  private _submitEdit = async () => {
+    const taskId = this._editingTaskId;
+    if (!taskId) return;
+    const title = this._draftTitle.trim();
+    if (!title) return;
+
+    const updates: Record<string, unknown> = {
+      title,
+      description: this._draftDescription.trim() || null,
+      icon: this._draftIcon,
+    };
+
+    if (this._draftTaskType === 'frequency') {
+      updates.frequency_target = parseInt(this._draftFrequencyTarget, 10) || 10;
+    } else {
+      updates.interval_value = parseInt(this._draftInterval, 10) || 90;
+      updates.interval_type = this._draftPeriod;
+    }
+
+    try {
+      await this._sendCommand({
+        type: 'upkeep/update_task',
+        task_id: taskId,
+        updates,
+      });
+      this._cancelForm();
       this._refresh();
     } catch (e) {
       this._error = (e as Error).message;
@@ -292,9 +407,12 @@ export class UpkeepPanel extends LitElement {
         : formatDaysRemaining(days_remaining, locale, taskType);
     const rowError = this._rowErrors[task.id];
     const justCompleted = this._justCompletedIds.includes(task.id);
+    const isEditing = this._editingTaskId === task.id;
 
     return html`
-      <div class="task-row ${urgency} ${isSnoozed ? 'snoozed' : ''} ${justCompleted ? 'done-anim' : ''}">
+      <div
+        class="task-row ${urgency} ${isSnoozed ? 'snoozed' : ''} ${justCompleted ? 'done-anim' : ''} ${isEditing ? 'editing' : ''}"
+      >
         <div class="task-row-main">
           <div class="task-info">
             <ha-icon .icon=${task.icon || 'mdi:calendar-check'} style="color:${metaColor}"></ha-icon>
@@ -326,6 +444,13 @@ export class UpkeepPanel extends LitElement {
 
     return html`
       <div class="task-actions">
+        <button
+          class="btn btn-secondary"
+          aria-label="Edit task"
+          @click=${() => this._startEdit(task)}
+        >
+          Edit
+        </button>
         ${!isSnoozed
           ? html`
               <button
@@ -519,16 +644,37 @@ export class UpkeepPanel extends LitElement {
       .btn-icon ha-icon {
         --mdc-icon-size: 18px;
       }
-      .add-form {
+      .task-form {
         background: var(--card-background-color);
         border-radius: 12px;
         padding: 16px;
         margin-bottom: 16px;
         border: 1px solid var(--divider-color);
       }
-      .add-form h3 {
+      .task-form h3 {
         margin: 0 0 12px 0;
         font-size: 16px;
+      }
+      .icon-field-label {
+        width: 100%;
+      }
+      .icon-field-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .icon-preview {
+        --mdc-icon-size: 32px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+      }
+      .icon-field-row ha-icon-picker {
+        flex: 1;
+        min-width: 0;
+      }
+      .form-field-label input:disabled {
+        opacity: 0.7;
+        cursor: default;
       }
       .form-row {
         display: flex;
@@ -578,6 +724,9 @@ export class UpkeepPanel extends LitElement {
       }
       .form-actions {
         margin-top: 12px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
       }
       .task-list {
         display: flex;
@@ -604,6 +753,10 @@ export class UpkeepPanel extends LitElement {
       }
       .task-row.snoozed {
         opacity: 0.7;
+      }
+      .task-row.editing {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
       }
       .task-row.done-anim {
         animation: donePop 0.4s ease;

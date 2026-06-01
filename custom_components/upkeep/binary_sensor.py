@@ -206,6 +206,7 @@ class UpkeepSensor(BinarySensorEntity):
     def _base_attrs(self) -> dict:
         """Base attributes for all task types."""
         attrs = {
+            "icon": self.task.get("icon") or "mdi:calendar-check",
             "interval_value": self.task.get("interval_value"),
             "interval_type": self.task.get("interval_type"),
             "task_type": self.task.get("task_type", const.TASK_TYPE_TIME),
