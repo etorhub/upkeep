@@ -1,0 +1,63 @@
+name: Update Python Dependencies
+
+on:
+  schedule:
+    - cron: '0 9 1 * *'  # 1st of every month at 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-python-deps:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pur
+        run: pip install pur
+
+      - name: Upgrade pinned versions
+        run: |
+          pur -r requirements_dev.txt
+          pur -r requirements_test.txt
+          pur --requirement setup.cfg
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet requirements_dev.txt requirements_test.txt setup.cfg; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="chore/update-python-deps-$(date +%Y%m)"
+          git checkout -b "$BRANCH"
+          git add requirements_dev.txt requirements_test.txt setup.cfg
+          git commit -m "chore: update Python dependencies"
+          git push -u origin "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+        id: push
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "chore: update Python dependencies" \
+            --body "Automated monthly upgrade of pinned versions in \`requirements_dev.txt\`, \`requirements_test.txt\`, and \`setup.cfg\`." \
+            --base main \
+            --head "${{ steps.push.outputs.branch }}"
