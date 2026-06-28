@@ -58,7 +58,7 @@ async def async_register_card(hass: HomeAssistant) -> None:
             return
         url = f"{CARD_URL_BASE}/{CARD_FILENAME}"
         legacy_url = f"{LEGACY_CARD_URL_BASE}/{CARD_FILENAME}"
-        version = _get_version()
+        version = await hass.async_add_executor_job(_get_version)
         full_url = f"{url}?v={version}"
         items = getattr(resources, "async_items", lambda: [])()
         existing = [
