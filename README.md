@@ -56,12 +56,16 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 
 ### HACS (Recommended)
 
+Upkeep is installed as a HACS **custom repository** (Integration). Use the badge at the top of this README, or add it manually:
+
 1. Open **HACS** in your Home Assistant instance.
-2. Go to **Integrations** and click the **+** button.
-3. Search for **Upkeep**.
-4. Click **Download**.
+2. Open the three-dot menu and choose **Custom repositories**.
+3. Add `https://github.com/etorhub/upkeep` with category **Integration**.
+4. Find **Upkeep** and click **Download**.
 5. Restart Home Assistant.
 6. Go to **Settings → Devices & Services → Add Integration** and add **Upkeep**.
+
+If Upkeep later appears as a default HACS listing, you can search for it in HACS instead of adding the custom repository.
 
 ### Manual
 
@@ -128,8 +132,6 @@ upkeep/
 Releases are created automatically on every push to `main` using [semantic-release](https://github.com/semantic-release/semantic-release). Use [Conventional Commits](https://www.conventionalcommits.org/) for release notes.
 
 CI builds the Lovelace card and sidebar panel, packages them into `upkeep.zip`, and attaches that zip to each GitHub release. HACS installs the integration from that release zip (`zip_release` in `hacs.json`); bundled JavaScript is not committed on `main`. For local development, run `npm run build` before copying `custom_components/upkeep` manually.
-
-For custom repositories, add via **HACS → Integrations → + → Custom repositories** with your GitHub URL.
 
 ---
 
