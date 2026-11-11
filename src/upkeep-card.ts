@@ -4,7 +4,14 @@ import { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 
 import type { HomeMaintenanceCardConfig, TaskData } from './types';
 import { CARD_VERSION, CARD_NAME, DEFAULTS } from './const';
-import { discoverEntities, buildTaskData, sortTasks, filterTasks } from './utils';
+import { calendarReady, loadCalendar } from './calendar';
+import {
+  discoverEntities,
+  buildTaskData,
+  needsClientCalendar,
+  sortTasks,
+  filterTasks,
+} from './utils';
 import { localize } from './localize/localize';
 import { cardStyles } from './styles';
 
@@ -46,6 +53,15 @@ export class HomeMaintenanceCard extends LitElement {
   @state() private _config!: HomeMaintenanceCardConfig;
   @state() private _activeFilter: NonNullable<HomeMaintenanceCardConfig['filter']> =
     DEFAULTS.filter;
+  @state() private _calendarReady = calendarReady();
+
+  public override connectedCallback(): void {
+    super.connectedCallback();
+    if (this._calendarReady) return;
+    void loadCalendar().then(() => {
+      this._calendarReady = true;
+    });
+  }
 
   public setConfig(config: HomeMaintenanceCardConfig): void {
     if (!config) return;
@@ -58,7 +74,12 @@ export class HomeMaintenanceCard extends LitElement {
   }
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
-    if (changedProps.has('_config') || changedProps.has('_activeFilter')) return true;
+    if (
+      changedProps.has('_config') ||
+      changedProps.has('_activeFilter') ||
+      changedProps.has('_calendarReady')
+    )
+      return true;
     if (!changedProps.has('hass')) return false;
 
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
@@ -93,19 +114,27 @@ export class HomeMaintenanceCard extends LitElement {
     );
 
     const dueSoonDays = this._config.due_soon_days ?? DEFAULTS.due_soon_days;
-    let tasks: TaskData[] = entityIds
+    const states = entityIds
       .map((id) => this.hass.states[id])
-      .filter(Boolean)
-      .map((stateObj) => buildTaskData(stateObj, dueSoonDays));
+      .filter((stateObj): stateObj is NonNullable<typeof stateObj> => Boolean(stateObj));
+    if (!this._calendarReady && states.some((stateObj) => needsClientCalendar(stateObj))) {
+      return html`
+        <ha-card>
+          <div class="card-content">
+            <div class="task-grid" style="--hm-grid-columns:${this._columns()}">
+              ${[1, 2, 3].map(() => html`<div class="skeleton-tile"></div>`)}
+            </div>
+          </div>
+        </ha-card>
+      `;
+    }
+    let tasks: TaskData[] = states.map((stateObj) => buildTaskData(stateObj, dueSoonDays));
 
     const sortBy = this._config.sort_by ?? DEFAULTS.sort_by;
     tasks = sortTasks(tasks, sortBy);
     tasks = filterTasks(tasks, this._activeFilter);
 
-    const allTasks: TaskData[] = entityIds
-      .map((id) => this.hass.states[id])
-      .filter(Boolean)
-      .map((stateObj) => buildTaskData(stateObj, dueSoonDays));
+    const allTasks: TaskData[] = states.map((stateObj) => buildTaskData(stateObj, dueSoonDays));
 
     const viewMode = this._config.view_mode ?? DEFAULTS.view_mode;
     const progressType = this._config.progress_type ?? DEFAULTS.progress_type;

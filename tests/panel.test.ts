@@ -1,8 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing';
 import type { HomeAssistant } from 'custom-card-helpers';
+import { loadCalendar } from '../src/calendar';
 import '../panel-src/main';
 import { computePanelTaskStatus } from '../panel-src/task-status';
+import { pointerOutside } from '../panel-src/light-dismiss';
+
+beforeAll(async () => {
+  await loadCalendar();
+});
 
 type MockTask = {
   id: string;
@@ -782,7 +788,7 @@ describe('upkeep-panel task actions', () => {
     expect(el.shadowRoot?.querySelector('.btn-complete.quiet')?.textContent?.trim()).toBe(
       'Complete'
     );
-    expect(el.shadowRoot?.querySelector('.btn-danger')).toBeNull();
+    expect(el.shadowRoot?.querySelector('.task-actions .btn-danger')).toBeNull();
 
     (el as any)._openMenuId = 'task-1';
     await (el as any).updateComplete;
@@ -873,5 +879,133 @@ describe('upkeep-panel task actions', () => {
     expect(el.shadowRoot?.querySelector('.task-schedule')?.textContent).toContain('sensor.kettle');
     const done = el.shadowRoot?.querySelector('.btn-complete') as HTMLButtonElement;
     expect(done.disabled).toBe(true);
+  });
+
+  it('moves through the desktop menu with arrow keys', async () => {
+    const task: MockTask = {
+      id: 'task-1',
+      title: 'Test task',
+      task_type: 'time',
+      interval_value: 90,
+      interval_type: 'days',
+      enabled: true,
+      last_performed: new Date().toISOString(),
+    };
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise: async () => [task] },
+    } as unknown as HomeAssistant;
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    const group = el.shadowRoot?.querySelector('[focusgroup]');
+    expect(group).not.toBeNull();
+    const items = [...(group?.querySelectorAll('button') ?? [])] as HTMLButtonElement[];
+    expect(items.map((item) => item.textContent?.trim())).toEqual(
+      expect.arrayContaining(['Snooze', 'Edit'])
+    );
+    items[0].focus();
+    group?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(el.shadowRoot?.activeElement).toBe(items[1]);
+  });
+
+  it('closes the action sheet from a backdrop tap when closedby is missing', async () => {
+    const task: MockTask = {
+      id: 'task-1',
+      title: 'Test task',
+      task_type: 'time',
+      interval_value: 30,
+      interval_type: 'days',
+      enabled: true,
+      last_performed: new Date().toISOString(),
+    };
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise: async () => [task] },
+    } as unknown as HomeAssistant;
+    const el = await fixture<HTMLElement>(
+      html`<upkeep-panel .hass=${hass} .narrow=${true}></upkeep-panel>`
+    );
+    await (el as any).updateComplete;
+    (el as any)._openMenuId = 'task-1';
+    await (el as any).updateComplete;
+
+    const dialog = el.shadowRoot?.querySelector('dialog.sheet') as HTMLDialogElement;
+    expect(dialog.querySelector('.sheet-close')).not.toBeNull();
+    dialog.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        right: 200,
+        top: 400,
+        bottom: 800,
+        width: 200,
+        height: 400,
+        x: 0,
+        y: 400,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    expect(pointerOutside({ clientX: 20, clientY: 20 }, dialog)).toBe(true);
+    expect(pointerOutside({ clientX: 20, clientY: 500 }, dialog)).toBe(false);
+    if (typeof HTMLDialogElement === 'undefined' || !('closedBy' in HTMLDialogElement.prototype)) {
+      const at = (type: string, clientX: number, clientY: number) => {
+        const event = new Event(type);
+        Object.defineProperties(event, {
+          clientX: { value: clientX },
+          clientY: { value: clientY },
+        });
+        return event;
+      };
+      dialog.dispatchEvent(at('pointerdown', 20, 20));
+      dialog.dispatchEvent(at('pointerup', 20, 20));
+      await (el as any).updateComplete;
+      expect((el as any)._openMenuId).toBeNull();
+    }
+  });
+
+  it('deletes a task only after the confirm dialog returns delete', async () => {
+    const sent: { type: string }[] = [];
+    const task: MockTask = {
+      id: 'task-1',
+      title: 'Filter',
+      task_type: 'time',
+      interval_value: 30,
+      interval_type: 'days',
+      enabled: true,
+      last_performed: new Date().toISOString(),
+    };
+    const hass = {
+      states: {},
+      connection: {
+        sendMessagePromise: async (msg: { type: string }) => {
+          sent.push(msg);
+          if (msg.type === 'upkeep/get_tasks') return [task];
+          return undefined;
+        },
+      },
+    } as unknown as HomeAssistant;
+    const el = await fixture<HTMLElement>(
+      html`<upkeep-panel .hass=${hass} .narrow=${true}></upkeep-panel>`
+    );
+    await (el as any).updateComplete;
+    (el as any)._openMenuId = 'task-1';
+    await (el as any).updateComplete;
+
+    const dialog = el.shadowRoot?.querySelector('dialog.confirm') as HTMLDialogElement;
+    expect(dialog.querySelector('button[value="cancel"]')?.hasAttribute('autofocus')).toBe(true);
+
+    const cancelled = (el as any)._deleteTask(task);
+    await (el as any).updateComplete;
+    expect(dialog.textContent).toContain('Filter');
+    dialog.returnValue = 'cancel';
+    dialog.dispatchEvent(new Event('close'));
+    await expect(cancelled).resolves.toBe(false);
+    expect(sent.some((msg) => msg.type === 'upkeep/remove_task')).toBe(false);
+
+    const removed = (el as any)._deleteTask(task);
+    await (el as any).updateComplete;
+    dialog.returnValue = 'delete';
+    dialog.dispatchEvent(new Event('close'));
+    await expect(removed).resolves.toBe(true);
+    expect(sent.some((msg) => msg.type === 'upkeep/remove_task')).toBe(true);
   });
 });

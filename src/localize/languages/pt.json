@@ -149,6 +149,7 @@
     "description_optional": "Descrição (opcional)",
     "description_placeholder": "Detalhes opcionais...",
     "cancel": "Cancelar",
+    "close": "Fechar",
     "save": "Guardar",
     "edit": "Editar",
     "edit_task_label": "Editar tarefa",

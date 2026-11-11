@@ -3,7 +3,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { localize } from '../src/localize/localize';
 import { formatPart } from '../src/status-format';
+import { calendarDaysBetween, calendarReady, loadCalendar } from '../src/calendar';
 import { formatDaysRemaining, getUrgencyColor } from '../src/utils';
+import { bindSheetLightDismiss } from './light-dismiss';
 import { defaultTrigger } from './triggers/catalog';
 import { renderTriggerFields, validateDraft } from './triggers/fields';
 import { renderTriggerPicker } from './triggers/picker';
@@ -57,7 +59,14 @@ export class UpkeepPanel extends LitElement {
   @state() private _justCompletedIds: string[] = [];
   @state() private _rowErrors: Record<string, string> = {};
   @state() private _viewportNarrow = false;
+  @state() private _calendarReady = calendarReady();
+  @state() private _confirmTitle = '';
   private _loadRequestId = 0;
+  private _enterOnOpen = new WeakSet<HTMLElement>();
+  private readonly _focusGroupNative =
+    typeof HTMLElement !== 'undefined' && 'focusGroup' in HTMLElement.prototype;
+  private readonly _commandsNative =
+    typeof HTMLButtonElement !== 'undefined' && 'commandForElement' in HTMLButtonElement.prototype;
   private _previewTimer: number | undefined;
   private _media: MediaQueryList | null = null;
   private _onViewport = (event: MediaQueryListEvent): void => {
@@ -74,9 +83,24 @@ export class UpkeepPanel extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this._watchViewport();
+    this._ensurePopover();
+    void loadCalendar().then(() => {
+      if (!this._calendarReady) this._calendarReady = true;
+    });
     if (this.hass?.connection) {
       this._loadTasks();
       this._loadNotifyTime();
+    }
+  }
+
+  private _ensurePopover(): void {
+    if (typeof HTMLElement === 'undefined' || typeof CSS === 'undefined' || !CSS.escape) return;
+    const hasOwn = (Object as { hasOwn?: (value: object, key: PropertyKey) => boolean }).hasOwn;
+    const popoverNative = hasOwn
+      ? hasOwn(HTMLElement.prototype, 'popover')
+      : Object.prototype.hasOwnProperty.call(HTMLElement.prototype, 'popover');
+    if (!popoverNative) {
+      void import('@oddbird/popover-polyfill').catch(() => undefined);
     }
   }
 
@@ -98,11 +122,13 @@ export class UpkeepPanel extends LitElement {
 
   private _syncSheet(): void {
     const dialog = this.renderRoot?.querySelector('dialog.sheet');
-    if (!(dialog instanceof HTMLDialogElement)) return;
+    if (!(dialog instanceof HTMLElement)) return;
+    const sheet = dialog as HTMLDialogElement;
     const shouldOpen = this._isNarrow() && this._openMenuId !== null;
+    bindSheetLightDismiss(dialog);
     try {
-      if (shouldOpen && !dialog.open && typeof dialog.showModal === 'function') dialog.showModal();
-      else if (!shouldOpen && dialog.open && typeof dialog.close === 'function') dialog.close();
+      if (shouldOpen && !sheet.open && typeof sheet.showModal === 'function') sheet.showModal();
+      else if (!shouldOpen && sheet.open && typeof sheet.close === 'function') sheet.close();
     } catch {
       // The test DOM has no top layer. Home Assistant's browser does.
     }
@@ -179,6 +205,9 @@ export class UpkeepPanel extends LitElement {
         done_enabled: attrs.done_enabled !== false,
         tag_key: attrs.tag_key as string | undefined,
       };
+    }
+    if (!calendarReady()) {
+      return { urgency: 'unknown' as const, days_remaining: 0, progress: 0 };
     }
     return computePanelTaskStatus(task, DUE_SOON_DAYS);
   }
@@ -321,21 +350,21 @@ export class UpkeepPanel extends LitElement {
   }
 
   private _schedulePreview(): string {
+    if (!calendarReady()) return '';
     const value = parseInt(this._draftInterval, 10) || 90;
-    const due = scheduledDueDate(this._previewAnchor(), value, this._draftPeriod);
+    const anchor = this._previewAnchor();
+    const due = scheduledDueDate(anchor, value, this._draftPeriod);
     const every = this._t('panel.every_phrase', {
       value,
       unit: this._unitWord(this._draftPeriod, value),
     });
     const dueLabel = this._t('panel.due_on', { date: this._formatDate(due) });
-    const remaining = formatDaysRemaining(
-      Math.round((due.getTime() - this._previewAnchor().getTime()) / 86400000),
-      this._locale()
-    );
+    const remaining = formatDaysRemaining(calendarDaysBetween(anchor, due), this._locale());
     return `${every}. ${dueLabel} · ${remaining}`;
   }
 
   private _noticeForecast(): string {
+    if (!calendarReady()) return '';
     const time = this._formatClock(this._notifyTime);
     const lines: string[] = [];
     const anchor = this._previewAnchor();
@@ -470,8 +499,24 @@ export class UpkeepPanel extends LitElement {
               </button>
             `
           : nothing}
-        ${narrow ? this._renderSheet() : nothing}
+        ${narrow ? this._renderSheet() : nothing} ${this._renderDeleteDialog()}
       </div>
+    `;
+  }
+
+  private _renderDeleteDialog() {
+    return html`
+      <dialog class="confirm" aria-labelledby="delete-title">
+        <h2 id="delete-title">${this._t('panel.delete_confirm', { title: this._confirmTitle })}</h2>
+        <form method="dialog">
+          <button type="submit" class="btn btn-secondary" value="cancel" autofocus>
+            ${this._t('panel.cancel')}
+          </button>
+          <button type="submit" class="btn btn-danger" value="delete">
+            ${this._t('panel.delete_task_label')}
+          </button>
+        </form>
+      </dialog>
     `;
   }
 
@@ -1164,7 +1209,7 @@ export class UpkeepPanel extends LitElement {
             </span>
             <span class="mobile-meta">
               <span style="color:${view.metaColor}">${view.metaText}</span>
-              ${task.task_type === 'frequency' || !task.last_performed
+              ${task.task_type === 'frequency' || !task.last_performed || !calendarReady()
                 ? nothing
                 : html`<span>
                     ·
@@ -1234,6 +1279,16 @@ export class UpkeepPanel extends LitElement {
         @close=${this._onSheetClose}
       >
         <span class="sheet-handle" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="sheet-close"
+          aria-label=${this._t('panel.close')}
+          @click=${() => {
+            this._openMenuId = null;
+          }}
+        >
+          <ha-icon icon="mdi:close"></ha-icon>
+        </button>
         ${task
           ? html`
               <div class="sheet-head">
@@ -1423,7 +1478,7 @@ export class UpkeepPanel extends LitElement {
         return `${every} · ${this._t('panel.snoozed_until', { date: this._formatDate(snooze) })}`;
       }
     }
-    if (!task.last_performed) return every;
+    if (!task.last_performed || !calendarReady()) return every;
     const due = scheduledDueDate(new Date(task.last_performed), value, unit);
     return `${every} · ${this._t('panel.due_on', { date: this._formatDate(due) })}`;
   }
@@ -1478,61 +1533,73 @@ export class UpkeepPanel extends LitElement {
             `}
         <div class="menu">
           <button
+            id=${this._menuTriggerId(task.id)}
             type="button"
             class="btn btn-icon"
             aria-label=${this._t('panel.more_actions')}
             aria-haspopup="menu"
-            aria-expanded=${menuOpen}
-            @click=${() => {
-              this._openMenuId = menuOpen ? null : task.id;
-            }}
+            aria-expanded=${menuOpen ? 'true' : 'false'}
+            commandfor=${this._menuDomId(task.id)}
+            command="toggle-popover"
+            @click=${this._onMenuClick}
+            @keydown=${this._onMenuTriggerKeydown}
           >
             <ha-icon icon="mdi:dots-vertical"></ha-icon>
           </button>
-          ${menuOpen
-            ? html`
-                <div class="row-menu" role="menu">
-                  ${isSnoozed
-                    ? nothing
-                    : html`
-                        <button
-                          type="button"
-                          role="menuitem"
-                          @click=${() => {
-                            this._openMenuId = null;
-                            void this._snoozeTask(task);
-                          }}
-                        >
-                          ${this._t('panel.snooze')}
-                        </button>
-                      `}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    @click=${() => {
-                      this._openMenuId = null;
-                      this._startEdit(task);
-                    }}
-                  >
-                    ${this._t('panel.edit')}
-                  </button>
-                  ${task.task_type === 'frequency'
-                    ? html`
-                        <button
-                          type="button"
-                          role="menuitem"
-                          @click=${() => {
-                            this._openMenuId = null;
-                            void this._incrementTask(task);
-                          }}
-                        >
-                          ${this._t('panel.increment')}
-                        </button>
-                      `
-                    : nothing}
-                </div>
-              `
-            : nothing}
+          <div
+            id=${this._menuDomId(task.id)}
+            class="row-menu"
+            popover="auto"
+            data-task-id=${task.id}
+            @toggle=${this._onMenuToggle}
+          >
+            <div
+              class="row-menu-items"
+              focusgroup="menu nomemory"
+              aria-labelledby=${this._menuTriggerId(task.id)}
+              role=${this._focusGroupNative ? nothing : 'menu'}
+              @keydown=${this._onMenuKeydown}
+            >
+              ${isSnoozed
+                ? nothing
+                : html`
+                    <button
+                      type="button"
+                      role=${this._focusGroupNative ? nothing : 'menuitem'}
+                      @click=${(event: Event) => {
+                        this._closeMenuFrom(event, false);
+                        void this._snoozeTask(task);
+                      }}
+                    >
+                      ${this._t('panel.snooze')}
+                    </button>
+                  `}
+              <button
+                type="button"
+                role=${this._focusGroupNative ? nothing : 'menuitem'}
+                @click=${(event: Event) => {
+                  this._closeMenuFrom(event, false);
+                  this._startEdit(task);
+                }}
+              >
+                ${this._t('panel.edit')}
+              </button>
+              ${task.task_type === 'frequency'
+                ? html`
+                    <button
+                      type="button"
+                      role=${this._focusGroupNative ? nothing : 'menuitem'}
+                      @click=${(event: Event) => {
+                        this._closeMenuFrom(event, false);
+                        void this._incrementTask(task);
+                      }}
+                    >
+                      ${this._t('panel.increment')}
+                    </button>
+                  `
+                : nothing}
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -1547,6 +1614,210 @@ export class UpkeepPanel extends LitElement {
     );
     if (!insideMenu) this._openMenuId = null;
   };
+
+  private _menuDomId(taskId: string): string {
+    return `task-menu-${taskId.replace(/[^A-Za-z0-9_-]/g, '-')}`;
+  }
+
+  private _menuTriggerId(taskId: string): string {
+    return `task-menu-trigger-${taskId.replace(/[^A-Za-z0-9_-]/g, '-')}`;
+  }
+
+  private _menuFor(trigger: HTMLElement): HTMLElement | null {
+    const menu = trigger.nextElementSibling;
+    return menu instanceof HTMLElement && menu.classList.contains('row-menu') ? menu : null;
+  }
+
+  private _isPopoverOpen(menu: HTMLElement): boolean {
+    try {
+      if (menu.matches(':popover-open')) return true;
+    } catch {
+      // jsdom does not implement the popover pseudo-class.
+    }
+    return menu.classList.contains(':popover-open');
+  }
+
+  private _showMenu(menu: HTMLElement, trigger: HTMLElement): void {
+    const show = (menu as HTMLElement & { showPopover?: (options?: { source?: Element }) => void })
+      .showPopover;
+    if (typeof show === 'function') {
+      try {
+        show.call(menu, { source: trigger });
+        return;
+      } catch {
+        // The test DOM has no popover top layer.
+      }
+    }
+    const taskId = menu.dataset.taskId;
+    if (taskId) this._openMenuId = taskId;
+    if (this._enterOnOpen.has(menu)) {
+      this._enterOnOpen.delete(menu);
+      this._firstMenuItem(menu)?.focus();
+    }
+  }
+
+  private _closeAndRestore(menu: HTMLElement, trigger: HTMLElement, fromPointer: boolean): void {
+    try {
+      trigger.focus({ preventScroll: true, focusVisible: !fromPointer } as FocusOptions);
+    } catch {
+      trigger.focus();
+    }
+    const hide = (menu as HTMLElement & { hidePopover?: () => void }).hidePopover;
+    if (typeof hide === 'function') {
+      try {
+        hide.call(menu);
+        return;
+      } catch {
+        // The test DOM has no popover top layer.
+      }
+    }
+    if (menu.dataset.taskId && this._openMenuId === menu.dataset.taskId) this._openMenuId = null;
+  }
+
+  private _closeMenuFrom(event: Event, fromPointer: boolean): void {
+    const item = event.currentTarget;
+    if (!(item instanceof HTMLElement)) return;
+    const menu = item.closest('.row-menu');
+    const trigger = menu?.previousElementSibling;
+    if (menu instanceof HTMLElement && trigger instanceof HTMLElement) {
+      this._closeAndRestore(
+        menu,
+        trigger,
+        fromPointer || (event instanceof MouseEvent && event.detail > 0)
+      );
+    }
+  }
+
+  private _firstMenuItem(menu: HTMLElement): HTMLButtonElement | null {
+    const button = menu.querySelector('button');
+    return button instanceof HTMLButtonElement ? button : null;
+  }
+
+  private _menuItems(group: HTMLElement): HTMLButtonElement[] {
+    return [...group.querySelectorAll('button')].filter(
+      (item): item is HTMLButtonElement =>
+        item instanceof HTMLButtonElement &&
+        item.closest('[focusgroup]') === group &&
+        !item.disabled
+    );
+  }
+
+  private _onMenuClick = (event: MouseEvent): void => {
+    const button = event.currentTarget;
+    if (!(button instanceof HTMLButtonElement)) return;
+    const menu = this._menuFor(button);
+    if (!menu) return;
+    if (!this._commandsNative) event.preventDefault();
+    const fromPointer = event.detail > 0;
+    if (fromPointer) this._enterOnOpen.delete(menu);
+    else this._enterOnOpen.add(menu);
+    if (this._commandsNative) return;
+    if (this._isPopoverOpen(menu)) this._closeAndRestore(menu, button, fromPointer);
+    else this._showMenu(menu, button);
+  };
+
+  private _onMenuTriggerKeydown = (event: KeyboardEvent): void => {
+    if (event.key !== 'ArrowDown') return;
+    const button = event.currentTarget;
+    if (!(button instanceof HTMLButtonElement)) return;
+    const menu = this._menuFor(button);
+    if (!menu) return;
+    event.preventDefault();
+    this._enterOnOpen.add(menu);
+    if (this._isPopoverOpen(menu)) this._firstMenuItem(menu)?.focus();
+    else if (this._commandsNative) button.click();
+    else this._showMenu(menu, button);
+  };
+
+  private _onMenuToggle = (event: Event): void => {
+    const menu = event.currentTarget;
+    if (!(menu instanceof HTMLElement)) return;
+    const open = (event as Event & { newState?: string }).newState === 'open';
+    const taskId = menu.dataset.taskId ?? null;
+    const trigger = menu.previousElementSibling;
+    if (open) {
+      this._placeMenu(menu, trigger instanceof HTMLElement ? trigger : null);
+      if (this._enterOnOpen.has(menu)) {
+        this._enterOnOpen.delete(menu);
+        this._firstMenuItem(menu)?.focus();
+      }
+      if (taskId && this._openMenuId !== taskId) this._openMenuId = taskId;
+      return;
+    }
+    if (taskId && this._openMenuId === taskId) this._openMenuId = null;
+  };
+
+  private _placeMenu(menu: HTMLElement, trigger: HTMLElement | null): void {
+    if (!trigger) return;
+    if (typeof CSS !== 'undefined' && CSS.supports?.('position-area', 'block-end')) return;
+    const rect = trigger.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const height = menuRect.height || 120;
+    const width = menuRect.width || 160;
+    const flip = rect.bottom + height + 4 > window.innerHeight && rect.top > height + 4;
+    const top = flip ? rect.top - height - 4 : rect.bottom + 4;
+    const left = Math.min(Math.max(8, rect.right - width), window.innerWidth - width - 8);
+    menu.style.left = `${left}px`;
+    menu.style.top = `${Math.max(8, top)}px`;
+  }
+
+  private _onMenuKeydown = (event: KeyboardEvent): void => {
+    if (this._focusGroupNative) return;
+    const group = event.currentTarget;
+    if (!(group instanceof HTMLElement)) return;
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End', 'Escape'].includes(event.key)) return;
+    if (event.key === 'Escape') {
+      const menu = group.closest('.row-menu');
+      const trigger = menu?.previousElementSibling;
+      if (menu instanceof HTMLElement && trigger instanceof HTMLElement) {
+        event.preventDefault();
+        event.stopPropagation();
+        this._closeAndRestore(menu, trigger, false);
+      }
+      return;
+    }
+    const items = this._menuItems(group);
+    const root = group.getRootNode();
+    const active = root instanceof ShadowRoot ? root.activeElement : document.activeElement;
+    const index = items.indexOf(active as HTMLButtonElement);
+    if (index < 0) return;
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? items.length - 1
+          : (index + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    items[next]?.focus();
+  };
+
+  private _confirmDelete(task: Task): Promise<boolean> {
+    this._confirmTitle = task.title;
+    return this.updateComplete.then(
+      () =>
+        new Promise((resolve) => {
+          const dialog = this.renderRoot?.querySelector('dialog.confirm');
+          if (!(dialog instanceof HTMLElement)) {
+            resolve(false);
+            return;
+          }
+          const modal = dialog as HTMLDialogElement;
+          const finish = (): void => {
+            dialog.removeEventListener('close', finish);
+            const accepted = modal.returnValue === 'delete';
+            modal.returnValue = '';
+            resolve(accepted);
+          };
+          dialog.addEventListener('close', finish);
+          try {
+            if (typeof modal.showModal === 'function') modal.showModal();
+          } catch {
+            // The test DOM has no top layer. Dispatching close still resolves this promise.
+          }
+        })
+    );
+  }
 
   private _deleteEditing(): void {
     const task = this._tasks.find((item) => item.id === this._editingTaskId);
@@ -1603,7 +1874,7 @@ export class UpkeepPanel extends LitElement {
   };
 
   private _deleteTask = async (task: Task): Promise<boolean> => {
-    if (!confirm(this._t('panel.delete_confirm', { title: task.title }))) return false;
+    if (!(await this._confirmDelete(task))) return false;
     this._clearRowError(task.id);
     try {
       await this._sendCommand({ type: 'upkeep/remove_task', task_id: task.id });
@@ -2145,15 +2416,33 @@ export class UpkeepPanel extends LitElement {
         position: relative;
       }
       .row-menu {
-        position: absolute;
-        inset-inline-end: 0;
-        inset-block-start: calc(100% + 4px);
-        z-index: 3;
+        inset: auto;
+        margin: 0;
         min-width: 160px;
         padding: 4px;
         border-radius: 12px;
         border: 1px solid var(--divider-color);
         background: var(--card-background-color);
+        flex-direction: column;
+      }
+      .row-menu:is(:popover-open, .\\:popover-open) {
+        display: flex;
+      }
+      @supports (position-area: block-end) {
+        .row-menu {
+          position-area: block-end span-inline-end;
+          position-try-fallbacks:
+            flip-block,
+            flip-inline,
+            flip-block flip-inline;
+        }
+      }
+      @supports not (position-area: block-end) {
+        .row-menu {
+          position: fixed;
+        }
+      }
+      .row-menu-items {
         display: flex;
         flex-direction: column;
       }
@@ -2579,12 +2868,35 @@ export class UpkeepPanel extends LitElement {
         display: flex;
         flex-direction: column;
       }
+      dialog.confirm {
+        max-width: min(420px, calc(100% - 32px));
+        border: 0;
+        border-radius: 16px;
+        padding: 20px;
+        background: var(--card-background-color, #2b2b2b);
+        color: var(--primary-text-color);
+      }
+      dialog.confirm[open] {
+        display: block;
+      }
+      dialog.confirm h2 {
+        margin: 0 0 16px;
+        font-size: 18px;
+        font-weight: 500;
+      }
+      dialog.confirm form {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      dialog.confirm:modal,
+      dialog.sheet:modal {
+        overscroll-behavior: contain;
+      }
+      dialog.confirm::backdrop,
       dialog.sheet::backdrop {
         background: rgb(0 0 0 / 60%);
         overflow: hidden;
-        overscroll-behavior: contain;
-      }
-      dialog.sheet:modal {
         overscroll-behavior: contain;
       }
       .sheet-handle {
@@ -2594,6 +2906,20 @@ export class UpkeepPanel extends LitElement {
         margin: 4px 0 14px;
         border-radius: 2px;
         background: var(--divider-color, #5a5a5a);
+      }
+      .sheet-close {
+        align-self: flex-end;
+        margin: 0 8px 8px auto;
+        inline-size: 44px;
+        block-size: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--primary-text-color);
+        cursor: pointer;
       }
       .sheet-head {
         display: flex;

@@ -149,6 +149,7 @@
     "description_optional": "Descripció (opcional)",
     "description_placeholder": "Detalls opcionals...",
     "cancel": "Cancel·la",
+    "close": "Tanca",
     "save": "Desa",
     "edit": "Edita",
     "edit_task_label": "Edita la tasca",

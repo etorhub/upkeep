@@ -1,4 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
+import { loadCalendar } from '../src/calendar';
+
+beforeAll(async () => {
+  await loadCalendar();
+});
 import {
   isMaintenanceEntity,
   discoverEntities,
@@ -143,6 +148,7 @@ describe('buildTaskData', () => {
     const task = buildTaskData(e, 7, now);
     expect(task.progress).toBe(40);
     expect(task.urgency).toBe('on_track');
+    expect(task.days_remaining).toBe(12);
     expect(task.status_key).toBe('status.days_left');
   });
 

@@ -5,6 +5,7 @@ import {
   HOME_MAINTENANCE_ATTRIBUTES_ALT,
   PROGRESS_THRESHOLDS,
 } from './const';
+import { calendarDaysUntil, plainDateFrom, systemTimeZone } from './calendar';
 import { localize } from './localize/localize';
 import { TaskData, TaskUrgency } from './types';
 
@@ -45,10 +46,20 @@ export function discoverEntities(
   });
 }
 
+export function needsClientCalendar(stateObj: HassEntity): boolean {
+  const attrs = stateObj.attributes || {};
+  if (attrs.upkeep_schema === 2 || typeof attrs.status_key === 'string') return false;
+  if (attrs.enabled === false) return false;
+  if (attrs.task_type === 'frequency') return false;
+  const next = attrs.next_due;
+  return Boolean(attrs.last_performed && next && next !== 'unknown');
+}
+
 export function buildTaskData(
   stateObj: HassEntity,
   dueSoonDays: number,
-  now: Date = new Date()
+  now: Date = new Date(),
+  timeZone?: string
 ): TaskData {
   const attrs = stateObj.attributes || {};
   const taskType = attrs.task_type as string | undefined;
@@ -125,13 +136,16 @@ export function buildTaskData(
     };
   }
 
+  const zone = timeZone || systemTimeZone();
   const lastPerformed = new Date(lastStr);
   const nextDue = new Date(nextStr);
-  const totalMs = nextDue.getTime() - lastPerformed.getTime();
-  const elapsedMs = now.getTime() - lastPerformed.getTime();
-  const progress = totalMs > 0 ? Math.round((elapsedMs / totalMs) * 100) : 100;
-  const diffMs = nextDue.getTime() - now.getTime();
-  const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const lastDay = plainDateFrom(lastStr, zone);
+  const nextDay = plainDateFrom(String(nextStr), zone);
+  const today = plainDateFrom(now, zone);
+  const totalDays = calendarDaysUntil(lastDay, nextDay);
+  const elapsedDays = calendarDaysUntil(lastDay, today);
+  const progress = totalDays > 0 ? Math.round((elapsedDays / totalDays) * 100) : 100;
+  const daysRemaining = calendarDaysUntil(today, nextDay);
 
   let urgency: TaskData['urgency'];
   if (progress >= PROGRESS_THRESHOLDS.overdue) {
