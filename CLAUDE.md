@@ -30,7 +30,7 @@ src/
 │   ├── summary-header.ts      # Overdue/due soon/on-track counts
 │   └── progress-ring.ts       # Circular or horizontal progress
 └── localize/
-    └── languages/             # en.json, es.json, ca.json
+    └── languages/             # en, es, ca, fr, de, it, nl, pt
 ```
 
 ## Key Patterns
@@ -38,7 +38,7 @@ src/
 1. **Entity discovery:** `discoverEntities(hass, entities?, exclude_entities?)` — auto-finds `binary_sensor.*` with Upkeep attributes, or uses manual list
 2. **Task data:** `buildTaskData(stateObj, dueSoonDays)` — computes progress, days_remaining, urgency
 3. **Urgency:** `on_track` | `due_soon` | `overdue` — based on progress and `due_soon_days`
-4. **Localization:** All UI strings via `localize('editor.title')`, etc.
+4. **Localization:** Card, editor, and panel strings via `localize('editor.title', vars?, language)`. Backend strings live in `custom_components/upkeep/translations/` for en, es, ca, fr, de, it, nl, and pt. `npm run check:i18n` requires every catalog to match English.
 
 ## Configuration Options
 

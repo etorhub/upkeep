@@ -30,7 +30,7 @@ src/
 │   ├── summary-header.ts      # Status counts header
 │   └── progress-ring.ts       # Circular/horizontal progress
 └── localize/
-    └── languages/             # en.json, es.json, ca.json
+    └── languages/             # en, es, ca, fr, de, it, nl, pt
 ```
 
 ## Conventions
@@ -38,7 +38,7 @@ src/
 - **Lit decorators:** Use `@customElement`, `@property`, `@state`; prefer reactive patterns
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `docs:`, etc.) — use `npm run commit`
 - **Pre-commit:** Runs lint, typecheck, test, format check, build; stages `dist/`
-- **Localization:** All user-facing strings via `localize('key.path')` from `src/localize/`
+- **Localization:** Card, editor, and panel strings via `localize('key.path', vars?, language)` from `src/localize/`. Integration strings are in `custom_components/upkeep/translations/` for en, es, ca, fr, de, it, nl, and pt. `npm run check:i18n` keeps both catalogs complete.
 
 ## Key Types
 

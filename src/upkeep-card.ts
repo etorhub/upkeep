@@ -134,7 +134,7 @@ export class HomeMaintenanceCard extends LitElement {
             ? html`
                 <div class="empty">
                   <ha-icon icon="mdi:check-circle-outline"></ha-icon>
-                  ${localize('card.no_tasks', undefined, undefined, lang)}
+                  ${localize('card.no_tasks', undefined, lang)}
                 </div>
               `
             : this._renderTasks(tasks, viewMode, progressType, columns)}
@@ -149,15 +149,15 @@ export class HomeMaintenanceCard extends LitElement {
   ): string {
     switch (filter) {
       case 'all':
-        return localize('editor.all', undefined, undefined, lang);
+        return localize('editor.all', undefined, lang);
       case 'snoozed':
-        return localize('editor.snoozed', undefined, undefined, lang);
+        return localize('editor.snoozed', undefined, lang);
       case 'overdue':
-        return localize('card.overdue', undefined, undefined, lang);
+        return localize('card.overdue', undefined, lang);
       case 'due_soon':
-        return localize('card.due_soon', undefined, undefined, lang);
+        return localize('card.due_soon', undefined, lang);
       case 'on_track':
-        return localize('card.on_track', undefined, undefined, lang);
+        return localize('card.on_track', undefined, lang);
     }
   }
 

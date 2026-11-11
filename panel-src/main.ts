@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
+import { localize } from '../src/localize/localize';
 import { formatDaysRemaining, getUrgencyColor } from '../src/utils';
 import { computePanelTaskStatus } from './task-status';
 import type { Task } from './types';
@@ -10,13 +11,7 @@ export type { Task } from './types';
 const DUE_SOON_DAYS = 7;
 const COMPLETE_FLASH_MS = 1500;
 const DEFAULT_ICON = 'mdi:calendar-check';
-const FILTERS = [
-  ['all', 'All'],
-  ['overdue', 'Overdue'],
-  ['due_soon', 'Due soon'],
-  ['on_track', 'On track'],
-  ['snoozed', 'Snoozed'],
-] as const;
+const FILTERS = ['all', 'overdue', 'due_soon', 'on_track', 'snoozed'] as const;
 
 type FormMode = 'none' | 'add' | 'edit';
 
@@ -67,7 +62,7 @@ export class UpkeepPanel extends LitElement {
       })
       .catch((err: Error) => {
         if (requestId !== this._loadRequestId) return;
-        this._error = err?.message ?? 'Failed to load tasks';
+        this._error = err?.message ?? this._t('panel.load_failed');
       });
   }
 
@@ -98,6 +93,25 @@ export class UpkeepPanel extends LitElement {
 
   private _locale(): string {
     return this.hass?.locale?.language ?? this.hass?.language ?? 'en';
+  }
+
+  private _t(key: string, vars?: Record<string, string | number>): string {
+    return localize(key, vars, this._locale());
+  }
+
+  private _filterLabel(filter: (typeof FILTERS)[number]): string {
+    switch (filter) {
+      case 'all':
+        return this._t('editor.all');
+      case 'overdue':
+        return this._t('card.overdue');
+      case 'due_soon':
+        return this._t('card.due_soon');
+      case 'on_track':
+        return this._t('card.on_track');
+      case 'snoozed':
+        return this._t('editor.snoozed');
+    }
   }
 
   private _setCompleting(taskId: string, active: boolean): void {
@@ -141,7 +155,7 @@ export class UpkeepPanel extends LitElement {
 
   protected render() {
     if (!this.hass) {
-      return html`<div class="panel">Loading...</div>`;
+      return html`<div class="panel">${localize('panel.loading')}</div>`;
     }
 
     const tasks = this._filteredTasks();
@@ -153,7 +167,7 @@ export class UpkeepPanel extends LitElement {
           <div class="header-actions">
             <div class="filter-bar">
               ${FILTERS.map(
-                ([value, label]) => html`
+                (value) => html`
                   <button
                     type="button"
                     class="filter-chip ${this._filter === value ? 'active' : ''}"
@@ -161,7 +175,7 @@ export class UpkeepPanel extends LitElement {
                       this._filter = value;
                     }}
                   >
-                    ${label}
+                    ${this._filterLabel(value)}
                   </button>
                 `
               )}
@@ -173,7 +187,7 @@ export class UpkeepPanel extends LitElement {
                     class="btn btn-header"
                     @click=${() => this._toggleAddForm()}
                   >
-                    Add Task
+                    ${this._t('panel.add_task')}
                   </button>
                 `
               : nothing}
@@ -186,7 +200,9 @@ export class UpkeepPanel extends LitElement {
         <div class="task-list">
           ${tasks.length === 0
             ? this._formMode === 'none'
-              ? html`<div class="empty">No tasks. Click "Add Task" to create one.</div>`
+              ? html`<div class="empty">
+                  ${this._t('panel.empty', { add: this._t('panel.add_task') })}
+                </div>`
               : nothing
             : tasks.map((task) => this._renderTask(task))}
         </div>
@@ -207,10 +223,12 @@ export class UpkeepPanel extends LitElement {
         aria-labelledby="task-form-heading"
         @submit=${this._onFormSubmit}
       >
-        <h3 id="task-form-heading">${isEdit ? 'Edit Task' : 'Add Task'}</h3>
+        <h3 id="task-form-heading">
+          ${isEdit ? this._t('panel.edit_task') : this._t('panel.add_task')}
+        </h3>
         <div class="form-row">
           <label class="form-field-label icon-field-label">
-            <span>Icon</span>
+            <span>${this._t('panel.icon')}</span>
             <div class="icon-field-row">
               <ha-icon class="icon-preview" .icon=${this._draftIcon}></ha-icon>
               <ha-icon-picker
@@ -223,7 +241,7 @@ export class UpkeepPanel extends LitElement {
         </div>
         <div class="form-row">
           <label class="form-field-label" for="task-title">
-            <span>Title</span>
+            <span>${this._t('panel.title')}</span>
             <input
               id="task-title"
               name="title"
@@ -232,7 +250,7 @@ export class UpkeepPanel extends LitElement {
               enterkeyhint="next"
               .value=${this._draftTitle}
               @input=${this._onTitleInput}
-              placeholder="e.g. Change air filter"
+              placeholder=${this._t('panel.title_placeholder')}
             />
           </label>
         </div>
@@ -240,11 +258,17 @@ export class UpkeepPanel extends LitElement {
           ? html`
               <div class="form-row">
                 <label class="form-field-label" for="task-type">
-                  <span>Task type</span>
-                  <input id="task-type" type="text" readonly disabled value="Frequency (uses)" />
+                  <span>${this._t('panel.task_type')}</span>
+                  <input
+                    id="task-type"
+                    type="text"
+                    readonly
+                    disabled
+                    .value=${this._t('panel.frequency_uses')}
+                  />
                 </label>
                 <label class="form-field-label" for="task-frequency-target">
-                  <span>Target uses</span>
+                  <span>${this._t('panel.target_uses')}</span>
                   <input
                     id="task-frequency-target"
                     name="frequency_target"
@@ -259,7 +283,7 @@ export class UpkeepPanel extends LitElement {
           : html`
               <div class="form-row schedule-row">
                 <label class="form-field-label schedule-field" for="task-interval">
-                  <span>Every</span>
+                  <span>${this._t('panel.every')}</span>
                   <input
                     id="task-interval"
                     name="interval"
@@ -272,7 +296,7 @@ export class UpkeepPanel extends LitElement {
                   />
                 </label>
                 <label class="form-field-label schedule-field" for="task-period">
-                  <span>Period</span>
+                  <span>${this._t('panel.period')}</span>
                   <select
                     id="task-period"
                     name="period"
@@ -280,10 +304,14 @@ export class UpkeepPanel extends LitElement {
                     .value=${this._draftPeriod}
                     @change=${this._onPeriodChange}
                   >
-                    <option value="days" ?selected=${this._draftPeriod === 'days'}>Days</option>
-                    <option value="weeks" ?selected=${this._draftPeriod === 'weeks'}>Weeks</option>
+                    <option value="days" ?selected=${this._draftPeriod === 'days'}>
+                      ${this._t('panel.days')}
+                    </option>
+                    <option value="weeks" ?selected=${this._draftPeriod === 'weeks'}>
+                      ${this._t('panel.weeks')}
+                    </option>
                     <option value="months" ?selected=${this._draftPeriod === 'months'}>
-                      Months
+                      ${this._t('panel.months')}
                     </option>
                   </select>
                 </label>
@@ -291,7 +319,7 @@ export class UpkeepPanel extends LitElement {
             `}
         <div class="form-row">
           <label class="form-field-label" for="task-description">
-            <span>Description (optional)</span>
+            <span>${this._t('panel.description_optional')}</span>
             <input
               id="task-description"
               name="description"
@@ -299,14 +327,16 @@ export class UpkeepPanel extends LitElement {
               enterkeyhint="done"
               .value=${this._draftDescription}
               @input=${this._onDescriptionInput}
-              placeholder="Optional details..."
+              placeholder=${this._t('panel.description_placeholder')}
             />
           </label>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary" @click=${this._cancelForm}>Cancel</button>
+          <button type="button" class="btn btn-secondary" @click=${this._cancelForm}>
+            ${this._t('panel.cancel')}
+          </button>
           <button type="submit" class="btn btn-done" ?disabled=${titleMissing}>
-            ${isEdit ? 'Save' : 'Add Task'}
+            ${isEdit ? this._t('panel.save') : this._t('panel.add_task')}
           </button>
         </div>
       </form>
@@ -456,7 +486,10 @@ export class UpkeepPanel extends LitElement {
     const taskType = task.task_type === 'frequency' ? 'frequency' : 'time';
     const metaText =
       task.task_type === 'frequency'
-        ? `${task.current_count ?? 0} / ${task.frequency_target ?? 0} uses`
+        ? this._t('panel.uses_progress', {
+            current: task.current_count ?? 0,
+            target: task.frequency_target ?? 0,
+          })
         : formatDaysRemaining(days_remaining, locale, taskType);
     const rowError = this._rowErrors[task.id];
     const justCompleted = this._justCompletedIds.includes(task.id);
@@ -504,10 +537,10 @@ export class UpkeepPanel extends LitElement {
       <div class="task-actions">
         <button
           class="btn btn-secondary"
-          aria-label="Edit task"
+          aria-label=${this._t('panel.edit_task_label')}
           @click=${() => this._startEdit(task)}
         >
-          Edit
+          ${this._t('panel.edit')}
         </button>
         ${!isSnoozed
           ? html`
@@ -516,7 +549,7 @@ export class UpkeepPanel extends LitElement {
                 ?disabled=${isCompleting}
                 @click=${() => this._completeTask(task)}
               >
-                ${isCompleting ? '…' : 'Complete'}
+                ${isCompleting ? '…' : this._t('panel.complete')}
               </button>
               ${task.task_type === 'frequency'
                 ? html`
@@ -526,15 +559,17 @@ export class UpkeepPanel extends LitElement {
                   `
                 : nothing}
               <button class="btn btn-secondary" @click=${() => this._snoozeTask(task)}>
-                Snooze
+                ${this._t('panel.snooze')}
               </button>
             `
           : html`
-              <button class="btn btn-done" @click=${() => this._enableTask(task)}>Enable</button>
+              <button class="btn btn-done" @click=${() => this._enableTask(task)}>
+                ${this._t('panel.enable')}
+              </button>
             `}
         <button
           class="btn btn-icon"
-          aria-label="Delete task"
+          aria-label=${this._t('panel.delete_task_label')}
           @click=${() => this._deleteTask(task)}
         >
           <ha-icon icon="mdi:delete"></ha-icon>
@@ -590,7 +625,7 @@ export class UpkeepPanel extends LitElement {
   };
 
   private _deleteTask = async (task: Task) => {
-    if (!confirm(`Delete "${task.title}"?`)) return;
+    if (!confirm(this._t('panel.delete_confirm', { title: task.title }))) return;
     this._clearRowError(task.id);
     try {
       await this._sendCommand({ type: 'upkeep/remove_task', task_id: task.id });

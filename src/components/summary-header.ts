@@ -21,21 +21,21 @@ export class SummaryHeader extends LitElement {
         ${overdue > 0
           ? html`
               <span class="badge overdue" style="--badge-color:${URGENCY_COLORS.overdue}">
-                ${overdue} ${localize('card.overdue', undefined, undefined, lang)}
+                ${overdue} ${localize('card.overdue', undefined, lang)}
               </span>
             `
           : ''}
         ${dueSoon > 0
           ? html`
               <span class="badge due-soon" style="--badge-color:${URGENCY_COLORS.due_soon}">
-                ${dueSoon} ${localize('card.due_soon', undefined, undefined, lang)}
+                ${dueSoon} ${localize('card.due_soon', undefined, lang)}
               </span>
             `
           : ''}
         ${onTrack > 0
           ? html`
               <span class="badge on-track" style="--badge-color:${URGENCY_COLORS.on_track}">
-                ${onTrack} ${localize('card.on_track', undefined, undefined, lang)}
+                ${onTrack} ${localize('card.on_track', undefined, lang)}
               </span>
             `
           : ''}

@@ -32,7 +32,7 @@ export default [
       format: 'es',
       inlineDynamicImports: true,
     },
-    plugins: plugins(),
+    plugins: plugins(true),
     onwarn,
   },
 ];

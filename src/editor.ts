@@ -15,14 +15,18 @@ export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
     this._config = { ...config };
   }
 
+  private _t(key: string): string {
+    return localize(key, undefined, this.hass?.locale?.language ?? this.hass?.language);
+  }
+
   protected render(): TemplateResult {
     if (!this.hass || !this._config) return html``;
 
     return html`
-      ${this._renderSection('general', localize('editor.general'), this._renderGeneral())}
-      ${this._renderSection('entities', localize('editor.entities'), this._renderEntities())}
-      ${this._renderSection('display', localize('editor.display'), this._renderDisplay())}
-      ${this._renderSection('features', localize('editor.features'), this._renderFeatures())}
+      ${this._renderSection('general', this._t('editor.general'), this._renderGeneral())}
+      ${this._renderSection('entities', this._t('editor.entities'), this._renderEntities())}
+      ${this._renderSection('display', this._t('editor.display'), this._renderDisplay())}
+      ${this._renderSection('features', this._t('editor.features'), this._renderFeatures())}
     `;
   }
 
@@ -32,31 +36,31 @@ export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
     const c = this._config!;
     return html`
       <ha-textfield
-        .label=${localize('editor.title')}
+        .label=${this._t('editor.title')}
         .value=${c.title ?? ''}
         .configValue=${'title'}
         @input=${this._valueChanged}
       ></ha-textfield>
 
       <ha-select
-        .label=${localize('editor.view_mode')}
+        .label=${this._t('editor.view_mode')}
         .value=${c.view_mode ?? DEFAULTS.view_mode}
         .configValue=${'view_mode'}
         .options=${[
-          { value: 'grid', label: localize('editor.grid') },
-          { value: 'list', label: localize('editor.list') },
-          { value: 'compact', label: localize('editor.compact') },
+          { value: 'grid', label: this._t('editor.grid') },
+          { value: 'list', label: this._t('editor.list') },
+          { value: 'compact', label: this._t('editor.compact') },
         ]}
         @selected=${this._selectChanged}
       ></ha-select>
 
       <ha-select
-        .label=${localize('editor.progress_type')}
+        .label=${this._t('editor.progress_type')}
         .value=${c.progress_type ?? DEFAULTS.progress_type}
         .configValue=${'progress_type'}
         .options=${[
-          { value: 'ring', label: localize('editor.ring') },
-          { value: 'bar', label: localize('editor.bar') },
+          { value: 'ring', label: this._t('editor.ring') },
+          { value: 'bar', label: this._t('editor.bar') },
         ]}
         @selected=${this._selectChanged}
       ></ha-select>
@@ -66,7 +70,7 @@ export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
   private _renderEntities(): TemplateResult {
     return html`
       <p style="color:var(--secondary-text-color);font-size:13px;margin:0 0 12px 0;">
-        ${localize('editor.auto_discover')}
+        ${this._t('editor.auto_discover')}
       </p>
     `;
   }
@@ -75,32 +79,32 @@ export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
     const c = this._config!;
     return html`
       <ha-select
-        .label=${localize('editor.sort_by')}
+        .label=${this._t('editor.sort_by')}
         .value=${c.sort_by ?? DEFAULTS.sort_by}
         .configValue=${'sort_by'}
         .options=${[
-          { value: 'urgency', label: localize('editor.urgency') },
-          { value: 'name', label: localize('editor.name') },
-          { value: 'due_date', label: localize('editor.due_date') },
+          { value: 'urgency', label: this._t('editor.urgency') },
+          { value: 'name', label: this._t('editor.name') },
+          { value: 'due_date', label: this._t('editor.due_date') },
         ]}
         @selected=${this._selectChanged}
       ></ha-select>
 
       <ha-select
-        .label=${localize('editor.filter')}
+        .label=${this._t('editor.filter')}
         .value=${c.filter ?? DEFAULTS.filter}
         .configValue=${'filter'}
         .options=${[
-          { value: 'all', label: localize('editor.all') },
-          { value: 'overdue', label: localize('card.overdue') },
-          { value: 'due_soon', label: localize('card.due_soon') },
-          { value: 'on_track', label: localize('card.on_track') },
+          { value: 'all', label: this._t('editor.all') },
+          { value: 'overdue', label: this._t('card.overdue') },
+          { value: 'due_soon', label: this._t('card.due_soon') },
+          { value: 'on_track', label: this._t('card.on_track') },
         ]}
         @selected=${this._selectChanged}
       ></ha-select>
 
       <ha-textfield
-        .label=${localize('editor.columns')}
+        .label=${this._t('editor.columns')}
         type="number"
         min="1"
         max="6"
@@ -110,7 +114,7 @@ export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
       ></ha-textfield>
 
       <ha-textfield
-        .label=${localize('editor.due_soon_days')}
+        .label=${this._t('editor.due_soon_days')}
         type="number"
         min="1"
         max="90"
@@ -124,7 +128,7 @@ export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
   private _renderFeatures(): TemplateResult {
     const c = this._config!;
     return html`
-      <ha-formfield .label=${localize('editor.show_header')}>
+      <ha-formfield .label=${this._t('editor.show_header')}>
         <ha-switch
           .checked=${c.show_header ?? DEFAULTS.show_header}
           .configValue=${'show_header'}
@@ -132,7 +136,7 @@ export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
         ></ha-switch>
       </ha-formfield>
 
-      <ha-formfield .label=${localize('editor.show_filter_bar')}>
+      <ha-formfield .label=${this._t('editor.show_filter_bar')}>
         <ha-switch
           .checked=${c.show_filter_bar ?? DEFAULTS.show_filter_bar}
           .configValue=${'show_filter_bar'}

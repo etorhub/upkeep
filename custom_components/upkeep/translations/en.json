@@ -37,5 +37,73 @@
         }
       }
     }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Reset Last Performed",
+      "description": "Resets the last performed date for a maintenance task entity. Alias for complete_task for backward compatibility.",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The ID of the task entity to reset."
+        },
+        "performed_date": {
+          "name": "Performed Date",
+          "description": "Optionally specify the date the task was last performed."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Complete Task",
+      "description": "Mark a maintenance task as completed (resets last performed date).",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The ID of the task entity to complete."
+        },
+        "performed_date": {
+          "name": "Performed Date",
+          "description": "Optionally specify the date the task was last performed."
+        }
+      }
+    },
+    "snooze_task": {
+      "name": "Snooze Task",
+      "description": "Snooze or disable a maintenance task.",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The ID of the task entity to snooze."
+        },
+        "snooze_until": {
+          "name": "Snooze Until",
+          "description": "Date when the task should auto-re-enable (YYYY-MM-DD). Omit to disable indefinitely."
+        },
+        "disable": {
+          "name": "Disable",
+          "description": "If true, disable the task without a snooze date."
+        }
+      }
+    },
+    "enable_task": {
+      "name": "Enable Task",
+      "description": "Re-enable a snoozed or disabled maintenance task.",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The ID of the task entity to enable."
+        }
+      }
+    },
+    "increment_counter": {
+      "name": "Increment Counter",
+      "description": "Increment the usage counter for a frequency-based task (for example dishwasher runs).",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The ID of the frequency task entity to increment."
+        }
+      }
+    }
   }
 }

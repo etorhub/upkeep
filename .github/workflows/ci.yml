@@ -32,6 +32,9 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      - name: Check translations
+        run: npm run check:i18n
+
       - name: Test
         run: npm run test
 

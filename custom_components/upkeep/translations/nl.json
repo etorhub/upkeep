@@ -1,0 +1,109 @@
+{
+  "config": {
+    "flow_title": "Upkeep",
+    "step": {
+      "user": {
+        "title": "Upkeep instellen",
+        "description": "Upkeep voegt zichzelf toe aan de zijbalk van Home Assistant zodra het is ingesteld.",
+        "data": {
+          "admin_only": "Alleen beheerders",
+          "sidebar_title": "Titel in de zijbalk",
+          "sidebar_icon": "Pictogram in de zijbalk"
+        },
+        "data_description": {
+          "admin_only": "Als dit is ingeschakeld, zien alleen beheerders Upkeep in de zijbalk. Schakel het uit om het aan alle gebruikers te tonen.",
+          "sidebar_title": "Naam in de linkerzijbalk.",
+          "sidebar_icon": "MDI-pictogram voor het zijbalkitem (bijvoorbeeld mdi:hammer-wrench)."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Er is slechts één instantie van Upkeep toegestaan."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Upkeep voegt zichzelf toe aan de zijbalk van Home Assistant zodra het is ingesteld.",
+        "data": {
+          "admin_only": "Alleen beheerders",
+          "sidebar_title": "Titel in de zijbalk",
+          "sidebar_icon": "Pictogram in de zijbalk"
+        },
+        "data_description": {
+          "admin_only": "Als dit is ingeschakeld, zien alleen beheerders Upkeep in de zijbalk. Schakel het uit om het aan alle gebruikers te tonen.",
+          "sidebar_title": "Naam in de linkerzijbalk.",
+          "sidebar_icon": "MDI-pictogram voor het zijbalkitem (bijvoorbeeld mdi:hammer-wrench)."
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Laatste uitvoering resetten",
+      "description": "Reset de datum van de laatste uitvoering van een onderhoudstaak. Alias van complete_task voor achterwaartse compatibiliteit.",
+      "fields": {
+        "entity_id": {
+          "name": "Entiteits-ID",
+          "description": "ID van de taakentiteit die wordt gereset."
+        },
+        "performed_date": {
+          "name": "Uitvoerdatum",
+          "description": "Geef optioneel de datum van de laatste uitvoering op."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Taak voltooien",
+      "description": "Markeer een onderhoudstaak als voltooid (reset de datum van de laatste uitvoering).",
+      "fields": {
+        "entity_id": {
+          "name": "Entiteits-ID",
+          "description": "ID van de taakentiteit die wordt voltooid."
+        },
+        "performed_date": {
+          "name": "Uitvoerdatum",
+          "description": "Geef optioneel de datum van de laatste uitvoering op."
+        }
+      }
+    },
+    "snooze_task": {
+      "name": "Taak uitstellen",
+      "description": "Stel een onderhoudstaak uit of schakel deze uit.",
+      "fields": {
+        "entity_id": {
+          "name": "Entiteits-ID",
+          "description": "ID van de taakentiteit die wordt uitgesteld."
+        },
+        "snooze_until": {
+          "name": "Uitstellen tot",
+          "description": "Datum waarop de taak automatisch weer wordt ingeschakeld (JJJJ-MM-DD). Laat leeg om deze voor onbepaalde tijd uit te schakelen."
+        },
+        "disable": {
+          "name": "Uitschakelen",
+          "description": "Als dit waar is, wordt de taak uitgeschakeld zonder uitsteldatum."
+        }
+      }
+    },
+    "enable_task": {
+      "name": "Taak inschakelen",
+      "description": "Schakel een uitgestelde of uitgeschakelde onderhoudstaak weer in.",
+      "fields": {
+        "entity_id": {
+          "name": "Entiteits-ID",
+          "description": "ID van de taakentiteit die wordt ingeschakeld."
+        }
+      }
+    },
+    "increment_counter": {
+      "name": "Teller verhogen",
+      "description": "Verhoog de gebruiksteller van een taak op basis van frequentie (bijvoorbeeld vaatwasserrondes).",
+      "fields": {
+        "entity_id": {
+          "name": "Entiteits-ID",
+          "description": "ID van de frequentietaak die wordt verhoogd."
+        }
+      }
+    }
+  }
+}

@@ -39,4 +39,13 @@ logger:
 
 ## Adding Translations
 
-Add or update JSON files in `src/localize/languages/` (e.g. `en.json`, `es.json`, `ca.json`).
+User-facing copy lives in two catalogs, and every supported language must stay complete:
+
+- Frontend (card, card editor, and sidebar panel): `src/localize/languages/`
+- Integration config flow and services: `custom_components/upkeep/translations/`
+
+The required languages are English (`en`), Spanish (`es`), Catalan (`ca`), French (`fr`), German (`de`), Italian (`it`), Dutch (`nl`), and European Portuguese (`pt`). `en.json` is the reference in each directory. Other files must have the same keys, no empty strings, and the same `{placeholder}` tokens.
+
+Day and use counts use a singular and a plural string, chosen with `Intl.PluralRules`: `card.day_left_one` / `card.day_left_other`, and the matching overdue and use keys. Pass values through `localize(key, { count }, language)`.
+
+`npm run check:i18n` checks both catalogs and that every `localize()` and `_t()` call names a key in the frontend English file. CI and the pre-commit hook run that check. Words that are the same in English and another language, such as `Version` or `Filter`, are allowed.

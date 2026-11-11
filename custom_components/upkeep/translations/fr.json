@@ -1,0 +1,109 @@
+{
+  "config": {
+    "flow_title": "Upkeep",
+    "step": {
+      "user": {
+        "title": "Configurer Upkeep",
+        "description": "Upkeep s'ajoute à la barre latérale de Home Assistant une fois configuré.",
+        "data": {
+          "admin_only": "Administrateurs uniquement",
+          "sidebar_title": "Titre de la barre latérale",
+          "sidebar_icon": "Icône de la barre latérale"
+        },
+        "data_description": {
+          "admin_only": "Lorsque cette option est activée, seuls les administrateurs voient Upkeep dans la barre latérale. Désactivez-la pour l'afficher à tous les utilisateurs.",
+          "sidebar_title": "Nom affiché dans la barre latérale gauche.",
+          "sidebar_icon": "Icône MDI de l'élément de la barre latérale (par exemple mdi:hammer-wrench)."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Une seule instance d'Upkeep est autorisée."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Upkeep s'ajoute à la barre latérale de Home Assistant une fois configuré.",
+        "data": {
+          "admin_only": "Administrateurs uniquement",
+          "sidebar_title": "Titre de la barre latérale",
+          "sidebar_icon": "Icône de la barre latérale"
+        },
+        "data_description": {
+          "admin_only": "Lorsque cette option est activée, seuls les administrateurs voient Upkeep dans la barre latérale. Désactivez-la pour l'afficher à tous les utilisateurs.",
+          "sidebar_title": "Nom affiché dans la barre latérale gauche.",
+          "sidebar_icon": "Icône MDI de l'élément de la barre latérale (par exemple mdi:hammer-wrench)."
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Réinitialiser la dernière exécution",
+      "description": "Réinitialise la date de dernière exécution d'une tâche d'entretien. Alias de complete_task pour la rétrocompatibilité.",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entité",
+          "description": "ID de l'entité de la tâche à réinitialiser."
+        },
+        "performed_date": {
+          "name": "Date d'exécution",
+          "description": "Indiquez éventuellement la date de dernière exécution de la tâche."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Terminer la tâche",
+      "description": "Marque une tâche d'entretien comme terminée (réinitialise la date de dernière exécution).",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entité",
+          "description": "ID de l'entité de la tâche à terminer."
+        },
+        "performed_date": {
+          "name": "Date d'exécution",
+          "description": "Indiquez éventuellement la date de dernière exécution de la tâche."
+        }
+      }
+    },
+    "snooze_task": {
+      "name": "Reporter la tâche",
+      "description": "Reporte ou désactive une tâche d'entretien.",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entité",
+          "description": "ID de l'entité de la tâche à reporter."
+        },
+        "snooze_until": {
+          "name": "Reporter jusqu'au",
+          "description": "Date à laquelle la tâche doit se réactiver (AAAA-MM-JJ). Omettez-la pour la désactiver indéfiniment."
+        },
+        "disable": {
+          "name": "Désactiver",
+          "description": "Si vrai, désactive la tâche sans date de réactivation."
+        }
+      }
+    },
+    "enable_task": {
+      "name": "Activer la tâche",
+      "description": "Réactive une tâche reportée ou désactivée.",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entité",
+          "description": "ID de l'entité de la tâche à activer."
+        }
+      }
+    },
+    "increment_counter": {
+      "name": "Incrémenter le compteur",
+      "description": "Incrémente le compteur d'utilisation d'une tâche basée sur la fréquence (par exemple les lavages du lave-vaisselle).",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entité",
+          "description": "ID de l'entité de la tâche de fréquence à incrémenter."
+        }
+      }
+    }
+  }
+}

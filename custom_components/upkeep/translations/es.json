@@ -1,0 +1,109 @@
+{
+  "config": {
+    "flow_title": "Upkeep",
+    "step": {
+      "user": {
+        "title": "Configurar Upkeep",
+        "description": "Upkeep se añade a la barra lateral de Home Assistant al configurarse.",
+        "data": {
+          "admin_only": "Solo administradores",
+          "sidebar_title": "Título de la barra lateral",
+          "sidebar_icon": "Icono de la barra lateral"
+        },
+        "data_description": {
+          "admin_only": "Si está activado, solo los administradores ven Upkeep en la barra lateral. Desactívalo para mostrarlo a todos los usuarios.",
+          "sidebar_title": "Nombre que se muestra en la barra lateral izquierda.",
+          "sidebar_icon": "Icono MDI del elemento de la barra lateral (por ejemplo, mdi:hammer-wrench)."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Solo se permite una instancia de Upkeep."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Upkeep se añade a la barra lateral de Home Assistant al configurarse.",
+        "data": {
+          "admin_only": "Solo administradores",
+          "sidebar_title": "Título de la barra lateral",
+          "sidebar_icon": "Icono de la barra lateral"
+        },
+        "data_description": {
+          "admin_only": "Si está activado, solo los administradores ven Upkeep en la barra lateral. Desactívalo para mostrarlo a todos los usuarios.",
+          "sidebar_title": "Nombre que se muestra en la barra lateral izquierda.",
+          "sidebar_icon": "Icono MDI del elemento de la barra lateral (por ejemplo, mdi:hammer-wrench)."
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Restablecer última realización",
+      "description": "Restablece la fecha de la última vez que se realizó una tarea de mantenimiento. Alias de complete_task por compatibilidad.",
+      "fields": {
+        "entity_id": {
+          "name": "ID de entidad",
+          "description": "ID de la entidad de la tarea que se va a restablecer."
+        },
+        "performed_date": {
+          "name": "Fecha de realización",
+          "description": "Permite indicar la fecha en que se realizó la tarea por última vez."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Completar tarea",
+      "description": "Marca una tarea de mantenimiento como completada (reinicia la fecha de la última realización).",
+      "fields": {
+        "entity_id": {
+          "name": "ID de entidad",
+          "description": "ID de la entidad de la tarea que se va a completar."
+        },
+        "performed_date": {
+          "name": "Fecha de realización",
+          "description": "Permite indicar la fecha en que se realizó la tarea por última vez."
+        }
+      }
+    },
+    "snooze_task": {
+      "name": "Posponer tarea",
+      "description": "Pospone o desactiva una tarea de mantenimiento.",
+      "fields": {
+        "entity_id": {
+          "name": "ID de entidad",
+          "description": "ID de la entidad de la tarea que se va a posponer."
+        },
+        "snooze_until": {
+          "name": "Posponer hasta",
+          "description": "Fecha en la que la tarea debe reactivarse (AAAA-MM-DD). Omítela para desactivarla indefinidamente."
+        },
+        "disable": {
+          "name": "Desactivar",
+          "description": "Si es verdadero, desactiva la tarea sin una fecha de reactivación."
+        }
+      }
+    },
+    "enable_task": {
+      "name": "Activar tarea",
+      "description": "Vuelve a activar una tarea pospuesta o desactivada.",
+      "fields": {
+        "entity_id": {
+          "name": "ID de entidad",
+          "description": "ID de la entidad de la tarea que se va a activar."
+        }
+      }
+    },
+    "increment_counter": {
+      "name": "Incrementar contador",
+      "description": "Incrementa el contador de uso de una tarea basada en la frecuencia (por ejemplo, lavados del lavavajillas).",
+      "fields": {
+        "entity_id": {
+          "name": "ID de entidad",
+          "description": "ID de la entidad de la tarea de frecuencia que se va a incrementar."
+        }
+      }
+    }
+  }
+}

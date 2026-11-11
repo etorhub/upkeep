@@ -196,20 +196,23 @@ describe('formatDaysRemaining', () => {
   });
 
   it('formats today in English', () => {
-    expect(formatDaysRemaining(0, 'en')).toBe('Today');
+    expect(formatDaysRemaining(0, 'en')).toBe('Due today');
   });
 
-  it('formats in Spanish', () => {
-    expect(formatDaysRemaining(1, 'es')).toContain('1');
-  });
-
-  it('formats in Catalan', () => {
-    expect(formatDaysRemaining(1, 'ca')).toContain('1');
+  it('formats singular and plural days', () => {
+    expect(formatDaysRemaining(1, 'es')).toBe('1 día restante');
+    expect(formatDaysRemaining(1, 'ca')).toBe('1 dia restant');
+    expect(formatDaysRemaining(2, 'ca')).toBe('2 dies restants');
+    expect(formatDaysRemaining(1, 'fr')).toBe('1 jour restant');
+    expect(formatDaysRemaining(2, 'fr')).toBe('2 jours restants');
+    expect(formatDaysRemaining(-1, 'de')).toBe('1 Tag überfällig');
+    expect(formatDaysRemaining(-3, 'de')).toBe('3 Tage überfällig');
   });
 
   it('formats frequency uses left', () => {
-    expect(formatDaysRemaining(5, 'en', 'frequency')).toContain('5');
-    expect(formatDaysRemaining(5, 'en', 'frequency')).toContain('uses');
-    expect(formatDaysRemaining(0, 'en', 'frequency')).toBe('Today');
+    expect(formatDaysRemaining(1, 'en', 'frequency')).toBe('1 use left');
+    expect(formatDaysRemaining(5, 'en', 'frequency')).toBe('5 uses left');
+    expect(formatDaysRemaining(0, 'en', 'frequency')).toBe('No uses left');
+    expect(formatDaysRemaining(2, 'pt', 'frequency')).toBe('2 utilizações restantes');
   });
 });
