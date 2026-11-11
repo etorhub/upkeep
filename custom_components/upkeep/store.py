@@ -10,6 +10,7 @@ from homeassistant.util import dt as dt_util
 
 from . import const
 from .binary_sensor import UpkeepSensor
+from .notices import persistent_notification_ids
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,6 +51,13 @@ class UpkeepTask:
 
     # --- Notifications ---
     notify_when_due: bool = False
+    notify_before: bool = False
+    notify_before_value: int = 7
+    notify_before_unit: str = "days"
+    notify_service: str | None = None
+    notified_before_due: str | None = None
+    notified_due_on: str | None = None
+    notified_frequency_due: bool = False
 
     def to_dict(self) -> dict:
         """Convert to dict for storage."""
@@ -168,6 +176,7 @@ class TaskStore:
         if entity_entry is None:
             raise RuntimeError(f"No entity found with task ID {task_id}.")
 
+        self._dismiss_notifications(task_id)
         er.async_remove(entity_entry.entity_id)
         del self._tasks[task_id]
         self._save()
@@ -211,9 +220,13 @@ class TaskStore:
         if entity is None or task is None:
             raise RuntimeError("Task not found.")
 
+        self._dismiss_notifications(task_id)
+
         if task.task_type == const.TASK_TYPE_FREQUENCY:
             task.current_count = 0
+            task.notified_frequency_due = False
             entity.task["current_count"] = 0
+            entity.task["notified_frequency_due"] = False
         else:
             if performed_date is None:
                 performed_date = dt_util.now()
@@ -285,6 +298,22 @@ class TaskStore:
         entity.task["snoozed_until"] = None
         entity.async_schedule_update_ha_state(force_refresh=True)
         self._save()
+
+    def _dismiss_notifications(self, task_id: str) -> None:
+        """Dismiss persistent notifications left for a completed or deleted task."""
+        notifications = self.hass.data.get("persistent_notification")
+        if not isinstance(notifications, dict):
+            return
+        for notification_id in persistent_notification_ids(task_id):
+            if notification_id not in notifications:
+                continue
+            self.hass.async_create_task(
+                self.hass.services.async_call(
+                    "persistent_notification",
+                    "dismiss",
+                    {"notification_id": notification_id},
+                )
+            )
 
     def _save(self) -> None:
         """Save tasks in the background."""

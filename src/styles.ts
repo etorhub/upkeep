@@ -2,69 +2,140 @@ import { css } from 'lit';
 
 export const cardStyles = css`
   :host {
+    display: block;
     --hm-grid-columns: var(--grid-columns, 3);
+    container: upkeep / inline-size;
   }
 
   ha-card {
-    overflow: hidden;
+    overflow: clip;
   }
 
   .card-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 16px 0 16px;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    padding: 16px 20px 12px;
   }
   .card-title {
-    font-size: 18px;
+    margin: 0;
+    font-size: 20px;
     font-weight: 500;
     color: var(--primary-text-color);
+    text-wrap: balance;
+  }
+  .card-subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: var(--secondary-text-color);
+    text-wrap: pretty;
   }
 
   .card-content {
-    padding: 16px;
+    padding: 16px 16px 16px;
+  }
+  .card-header ~ .card-content,
+  .filter-bar ~ .card-content {
+    padding-top: 0;
+  }
+  .card-content.grid {
+    padding-inline: 16px;
+  }
+  .card-content.list {
+    padding: 0 0 4px;
   }
 
-  /* Filter bar */
   .filter-bar {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    padding: 0 0 12px 0;
+    flex-wrap: balance;
+    gap: 8px;
+    padding: 0 20px 16px;
   }
   .filter-chip {
-    border: none;
-    border-radius: 16px;
-    padding: 4px 12px;
-    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-block-size: 44px;
+    padding: 0 6px 0 16px;
+    border: 1px solid var(--divider-color);
+    border-radius: 22px;
+    background: transparent;
+    color: var(--primary-text-color);
+    font: inherit;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    background: var(--secondary-background-color);
-    color: var(--secondary-text-color);
-    transition: all 0.15s ease;
   }
   .filter-chip:hover {
-    background: var(--divider-color);
+    background: color-mix(in srgb, var(--primary-text-color) 6%, transparent);
   }
   .filter-chip.active {
     background: var(--primary-color);
-    color: var(--text-primary-color, #fff);
+    border-color: var(--primary-color);
+    color: #102027;
+  }
+  .filter-chip:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  .filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 26px;
+    block-size: 26px;
+    padding: 0 7px;
+    box-sizing: border-box;
+    border-radius: 13px;
+    background: color-mix(in srgb, var(--primary-text-color) 10%, transparent);
+    color: var(--secondary-text-color);
+    font-size: 12px;
+  }
+  .filter-chip.active .filter-count {
+    background: rgb(16 32 39 / 16%);
+    color: inherit;
   }
 
-  /* Grid layout - min() ensures media queries override config columns */
   .task-grid {
     display: grid;
-    grid-template-columns: repeat(min(var(--hm-grid-columns), var(--hm-max-columns, 99)), 1fr);
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(min(100%, max(220px, calc(100% / var(--hm-grid-columns)))), 1fr)
+    );
     gap: 12px;
+    align-items: stretch;
   }
   .task-grid > * {
-    min-width: 0; /* Allow grid items to shrink below content size */
+    min-inline-size: 0;
   }
 
-  /* List layout */
   .task-list {
     display: flex;
     flex-direction: column;
+  }
+
+  @container upkeep (inline-size < 480px) {
+    .card-header {
+      padding: 14px 16px 12px;
+    }
+    .filter-bar {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      padding-inline: 16px;
+    }
+    .filter-chip {
+      flex-shrink: 0;
+    }
+    .task-grid {
+      grid-template-columns: repeat(min(2, var(--hm-grid-columns)), minmax(0, 1fr));
+      gap: 8px;
+    }
+    .card-content.grid {
+      padding-inline: 12px;
+    }
   }
 
   /* Compact layout */
@@ -108,23 +179,5 @@ export const cardStyles = css`
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
-  }
-
-  /* Responsive - --hm-max-columns caps config columns at viewport breakpoints */
-  @media (max-width: 900px) {
-    :host {
-      --hm-max-columns: 2;
-    }
-  }
-  @media (max-width: 500px) {
-    :host {
-      --hm-max-columns: 1;
-    }
-    .card-content {
-      padding: 12px;
-    }
-    .task-grid {
-      gap: 8px;
-    }
   }
 `;

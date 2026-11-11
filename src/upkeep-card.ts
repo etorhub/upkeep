@@ -9,7 +9,6 @@ import { localize } from './localize/localize';
 import { cardStyles } from './styles';
 
 import './components/task-tile';
-import './components/summary-header';
 import './components/progress-ring';
 
 console.info(
@@ -111,25 +110,26 @@ export class HomeMaintenanceCard extends LitElement {
     const viewMode = this._config.view_mode ?? DEFAULTS.view_mode;
     const progressType = this._config.progress_type ?? DEFAULTS.progress_type;
     const showHeader = this._config.show_header ?? DEFAULTS.show_header;
-    const showFilterBar = this._config.show_filter_bar ?? DEFAULTS.show_filter_bar;
+    const showFilterBar =
+      (this._config.show_filter_bar ?? DEFAULTS.show_filter_bar) || viewMode === 'list';
     const title = this._config.title;
     const columns = this._columns();
-    const lang = this.hass?.locale?.language ?? this.hass?.language;
+    const lang = this._locale();
 
     return html`
       <ha-card>
-        ${title
+        ${title || showHeader
           ? html`
-              <div class="card-header">
-                <span class="card-title">${title}</span>
-              </div>
+              <header class="card-header">
+                ${title ? html`<h2 class="card-title">${title}</h2>` : nothing}
+                ${showHeader
+                  ? html`<p class="card-subtitle">${this._summary(allTasks)}</p>`
+                  : nothing}
+              </header>
             `
           : nothing}
-        <div class="card-content">
-          ${showHeader
-            ? html`<hm-summary-header .hass=${this.hass} .tasks=${allTasks}></hm-summary-header>`
-            : nothing}
-          ${showFilterBar ? this._renderFilterBar() : nothing}
+        ${showFilterBar ? this._renderFilterBar(allTasks) : nothing}
+        <div class="card-content ${viewMode}">
           ${tasks.length === 0
             ? html`
                 <div class="empty">
@@ -143,41 +143,105 @@ export class HomeMaintenanceCard extends LitElement {
     `;
   }
 
-  private _filterLabel(
-    filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed',
-    lang?: string
-  ): string {
-    switch (filter) {
-      case 'all':
-        return localize('editor.all', undefined, lang);
-      case 'snoozed':
-        return localize('editor.snoozed', undefined, lang);
-      case 'overdue':
-        return localize('card.overdue', undefined, lang);
-      case 'due_soon':
-        return localize('card.due_soon', undefined, lang);
-      case 'on_track':
-        return localize('card.on_track', undefined, lang);
+  private _locale(): string {
+    return this.hass?.locale?.language ?? this.hass?.language ?? 'en';
+  }
+
+  private _t(key: string, vars?: Record<string, string | number>): string {
+    return localize(key, vars, this._locale());
+  }
+
+  private _isOne(count: number): boolean {
+    const tag = this._locale().replace(/['"]+/g, '').replaceAll('_', '-');
+    try {
+      return new Intl.PluralRules(tag).select(count) === 'one';
+    } catch {
+      return count === 1;
     }
   }
 
-  private _renderFilterBar(): TemplateResult {
+  private _countPhrase(count: number, oneKey: string, otherKey: string): string {
+    return this._t(this._isOne(count) ? oneKey : otherKey, { count });
+  }
+
+  private _summary(tasks: TaskData[]): string {
+    const active = tasks.filter((task) => task.urgency !== 'snoozed');
+    const taskCount = this._countPhrase(
+      active.length,
+      'panel.task_count_one',
+      'panel.task_count_other'
+    );
+    const snoozed = tasks.length - active.length;
+    const overdue = active.filter((task) => task.urgency === 'overdue').length;
+    const dueSoon = active.filter((task) => task.urgency === 'due_soon').length;
+    if (active.length > 0 && overdue === 0 && dueSoon === 0 && snoozed === 0) {
+      return this._t('panel.summary_clear', { tasks: taskCount });
+    }
+    const parts = [
+      overdue > 0
+        ? this._countPhrase(overdue, 'panel.count_overdue_one', 'panel.count_overdue_other')
+        : '',
+      dueSoon > 0
+        ? this._countPhrase(dueSoon, 'panel.count_due_soon_one', 'panel.count_due_soon_other')
+        : '',
+      snoozed > 0
+        ? this._countPhrase(snoozed, 'panel.count_snoozed_one', 'panel.count_snoozed_other')
+        : '',
+    ].filter(Boolean);
+    if (parts.length === 0) return taskCount;
+    return this._t('panel.summary_attention', { tasks: taskCount, detail: parts.join(', ') });
+  }
+
+  private _filterCount(
+    tasks: TaskData[],
+    filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed'
+  ): number {
+    if (filter === 'snoozed') return tasks.filter((task) => task.urgency === 'snoozed').length;
+    const active = tasks.filter((task) => task.urgency !== 'snoozed');
+    if (filter === 'all') return active.length;
+    return active.filter((task) => task.urgency === filter).length;
+  }
+
+  private _filterLabel(
+    filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed',
+    count: number
+  ): string {
+    const plural = (one: string, other: string) => this._t(this._isOne(count) ? one : other);
+    switch (filter) {
+      case 'all':
+        return this._t('panel.filter_all');
+      case 'overdue':
+        return plural('panel.filter_overdue_one', 'panel.filter_overdue_other');
+      case 'due_soon':
+        return plural('panel.filter_due_soon_one', 'panel.filter_due_soon_other');
+      case 'on_track':
+        return this._t('panel.filter_on_track');
+      case 'snoozed':
+        return plural('panel.filter_snoozed_one', 'panel.filter_snoozed_other');
+    }
+  }
+
+  private _renderFilterBar(tasks: TaskData[]): TemplateResult {
     const filters = ['all', 'overdue', 'due_soon', 'on_track', 'snoozed'] as const;
-    const lang = this.hass?.locale?.language ?? this.hass?.language;
     return html`
-      <div class="filter-bar">
-        ${filters.map(
-          (f) => html`
+      <div class="filter-bar" role="group" aria-label=${this._t('editor.filter')}>
+        ${filters.map((filter) => {
+          const count = this._filterCount(tasks, filter);
+          const selected = this._activeFilter === filter;
+          return html`
             <button
-              class="filter-chip ${this._activeFilter === f ? 'active' : ''}"
+              type="button"
+              class="filter-chip ${selected ? 'active' : ''}"
+              aria-pressed=${selected ? 'true' : 'false'}
               @click=${() => {
-                this._activeFilter = f;
+                this._activeFilter = filter;
               }}
             >
-              ${this._filterLabel(f, lang)}
+              ${this._filterLabel(filter, count)}
+              <span class="filter-count">${count}</span>
             </button>
-          `
-        )}
+          `;
+        })}
       </div>
     `;
   }

@@ -59,14 +59,12 @@ describe('upkeep-panel add form', () => {
     const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
     await (el as any).updateComplete;
 
-    expect(el.shadowRoot?.querySelector('.btn-header')?.textContent?.trim()).toBe(
-      'Afegeix una tasca'
-    );
+    expect(el.shadowRoot?.querySelector('.btn-header')?.textContent?.trim()).toBe('Nova tasca');
     expect(
       Array.from(el.shadowRoot!.querySelectorAll('.filter-chip')).map((node) =>
         node.textContent?.trim()
       )
-    ).toEqual(['Totes', 'Vençuda', 'Propera', 'Al dia', 'Ajornada']);
+    ).toEqual(['Totes 0', 'Vençudes 0', 'Properes 0', 'Al dia 0', 'Ajornades 0']);
   });
 
   it('renders period input as native select', async () => {
@@ -81,8 +79,9 @@ describe('upkeep-panel add form', () => {
     (el as any)._formMode = 'add';
     await (el as any).updateComplete;
 
-    const periodInput = el.shadowRoot?.querySelector('.task-form select');
-    expect(periodInput).toBeInstanceOf(HTMLSelectElement);
+    const periodInput = el.shadowRoot?.querySelector('.task-form input[name="period"]');
+    expect(periodInput).toBeInstanceOf(HTMLInputElement);
+    expect((periodInput as HTMLInputElement).type).toBe('radio');
     expect(el.shadowRoot?.querySelector('label[for="task-interval"]')?.textContent).toContain(
       'Every'
     );
@@ -100,22 +99,21 @@ describe('upkeep-panel add form', () => {
     await (el as any).updateComplete;
 
     const headerButton = el.shadowRoot?.querySelector('.btn-header');
-    expect(headerButton?.textContent?.trim()).toBe('Add Task');
+    expect(headerButton?.textContent?.trim()).toBe('New task');
     expect(
       Array.from(el.shadowRoot!.querySelectorAll('.filter-chip')).map((node) =>
         node.textContent?.trim()
       )
-    ).toEqual(['All', 'Overdue', 'Due soon', 'On track', 'Snoozed']);
+    ).toEqual(['All 0', 'Overdue 0', 'Due soon 0', 'On track 0', 'Snoozed 0']);
 
     (el as any)._formMode = 'add';
     await (el as any).updateComplete;
 
-    expect(el.shadowRoot?.querySelector('.btn-header')).toBeNull();
-    const formButtons = Array.from(el.shadowRoot!.querySelectorAll('.task-form button')).map(
-      (node) => node.textContent?.trim()
-    );
+    expect(el.shadowRoot?.querySelector('.btn-header')).not.toBeNull();
+    const formButtons = Array.from(el.shadowRoot!.querySelectorAll('.task-form button'))
+      .map((node) => node.textContent?.trim())
+      .filter(Boolean);
     expect(formButtons).toEqual(['Cancel', 'Add Task']);
-    expect(el.shadowRoot?.querySelector('.empty')).toBeNull();
   });
 
   it('disables submit until the title is filled', async () => {
@@ -405,10 +403,154 @@ describe('upkeep-panel add form', () => {
         icon: 'mdi:air-filter',
         interval_value: 60,
         interval_type: 'weeks',
+        notify_before: false,
+        notify_before_value: 7,
+        notify_before_unit: 'days',
+        notify_when_due: false,
+        notify_service: null,
       },
     });
     expect((el as any)._formMode).toBe('none');
     expect((el as any)._editingTaskId).toBeNull();
+  });
+
+  it('shows the lead period only after the coming-up checkbox, and the service for either notice', async () => {
+    const hass = {
+      states: {},
+      services: {
+        notify: {
+          persistent_notification: { name: 'Persistent notification' },
+          mobile_app_pixel_8: { name: 'Mobile App Pixel 8' },
+          send_message: { name: 'Send Message' },
+        },
+      },
+      connection: { sendMessagePromise: async () => [] },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    (el as any)._formMode = 'add';
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('#task-notify-unit')).toBeNull();
+    expect(el.shadowRoot?.querySelector('#task-notify-service')).toBeNull();
+
+    (el as any)._draftNotifyBefore = true;
+    (el as any)._draftNotifyService = 'persistent_notification';
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('#task-notify-unit')).toBeInstanceOf(HTMLSelectElement);
+    const service = el.shadowRoot?.querySelector('#task-notify-service') as HTMLSelectElement;
+    expect(service).toBeInstanceOf(HTMLSelectElement);
+    expect(Array.from(service.options).map((option) => option.value)).toEqual([
+      'mobile_app_pixel_8',
+      'persistent_notification',
+    ]);
+
+    (el as any)._draftNotifyBefore = false;
+    (el as any)._draftNotifyWhenDue = true;
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('#task-notify-unit')).toBeNull();
+    expect(el.shadowRoot?.querySelector('#task-notify-service')).toBeInstanceOf(HTMLSelectElement);
+  });
+
+  it('submits the selected notice settings with a new task', async () => {
+    const sendMessagePromise = vi.fn((msg: { type: string }) => {
+      if (msg.type === 'upkeep/get_tasks') return Promise.resolve([]);
+      if (msg.type === 'upkeep/add_task') return Promise.resolve({ success: true, id: 'hvac' });
+      return Promise.resolve(undefined);
+    });
+    const hass = {
+      states: {},
+      services: {
+        notify: {
+          mobile_app_pixel_8: { name: 'Mobile App Pixel 8' },
+        },
+      },
+      connection: { sendMessagePromise },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    (el as any)._formMode = 'add';
+    (el as any)._draftTitle = 'HVAC Filter';
+    (el as any)._draftNotifyBefore = true;
+    (el as any)._draftNotifyBeforeValue = '2';
+    (el as any)._draftNotifyBeforeUnit = 'weeks';
+    (el as any)._draftNotifyWhenDue = true;
+    (el as any)._draftNotifyService = 'mobile_app_pixel_8';
+
+    await (el as any)._submitAdd();
+
+    expect(sendMessagePromise).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'upkeep/add_task',
+        notify_before: true,
+        notify_before_value: 2,
+        notify_before_unit: 'weeks',
+        notify_when_due: true,
+        notify_service: 'mobile_app_pixel_8',
+      })
+    );
+  });
+
+  it('submits notice settings when saving an edit', async () => {
+    const sendMessagePromise = vi.fn((msg: { type: string }) => {
+      if (msg.type === 'upkeep/update_task') return Promise.resolve({ success: true });
+      return Promise.resolve(undefined);
+    });
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    (el as any)._formMode = 'edit';
+    (el as any)._editingTaskId = 'task-1';
+    (el as any)._draftTitle = 'HVAC Filter';
+    (el as any)._draftTaskType = 'time';
+    (el as any)._draftNotifyBefore = true;
+    (el as any)._draftNotifyBeforeValue = '3';
+    (el as any)._draftNotifyBeforeUnit = 'days';
+    (el as any)._draftNotifyWhenDue = false;
+    (el as any)._draftNotifyService = 'persistent_notification';
+
+    await (el as any)._submitEdit();
+
+    expect(sendMessagePromise).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'upkeep/update_task',
+        task_id: 'task-1',
+        updates: expect.objectContaining({
+          notify_before: true,
+          notify_before_value: 3,
+          notify_before_unit: 'days',
+          notify_when_due: false,
+          notify_service: 'persistent_notification',
+        }),
+      })
+    );
+  });
+
+  it('hides the lead period when editing a frequency task', async () => {
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise: async () => [] },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    (el as any)._formMode = 'edit';
+    (el as any)._draftTaskType = 'frequency';
+    (el as any)._draftNotifyBefore = true;
+    (el as any)._draftNotifyWhenDue = true;
+    (el as any)._draftNotifyService = 'persistent_notification';
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('#task-notify-before')).toBeNull();
+    expect(el.shadowRoot?.querySelector('#task-notify-unit')).toBeNull();
+    expect(el.shadowRoot?.querySelector('#task-notify-due')).toBeInstanceOf(HTMLInputElement);
+    expect(el.shadowRoot?.querySelector('#task-notify-service')).toBeInstanceOf(HTMLSelectElement);
   });
 
   it('cancelForm clears edit mode', async () => {
@@ -607,11 +749,57 @@ describe('upkeep-panel task actions', () => {
     await (el as any).updateComplete;
 
     expect(el.shadowRoot?.querySelector('ha-button')).toBeNull();
-    expect(el.shadowRoot?.querySelector('.btn-done')?.textContent?.trim()).toBe('Complete');
-    const secondaryButtons = Array.from(el.shadowRoot!.querySelectorAll('.btn-secondary')).map(
-      (node) => node.textContent?.trim()
+    expect(el.shadowRoot?.querySelector('.btn-complete.quiet')?.textContent?.trim()).toBe(
+      'Complete'
     );
-    expect(secondaryButtons).toContain('Edit');
-    expect(secondaryButtons).toContain('Snooze');
+    expect(el.shadowRoot?.querySelector('.btn-danger')).toBeNull();
+
+    (el as any)._openMenuId = 'task-1';
+    await (el as any).updateComplete;
+    const menuItems = Array.from(el.shadowRoot!.querySelectorAll('.row-menu button')).map((node) =>
+      node.textContent?.trim()
+    );
+    expect(menuItems).toContain('Edit');
+    expect(menuItems).toContain('Snooze');
+    expect(menuItems).not.toContain('Delete task');
+  });
+
+  it('uses a bottom sheet and a floating add button when narrow', async () => {
+    const task: MockTask = {
+      id: 'task-1',
+      title: 'Test task',
+      task_type: 'time',
+      interval_value: 30,
+      interval_type: 'days',
+      enabled: true,
+      last_performed: new Date().toISOString(),
+    };
+    const hass = {
+      states: {},
+      connection: {
+        sendMessagePromise: async (msg: { type: string }) => {
+          if (msg.type === 'upkeep/get_tasks') return [task];
+          return undefined;
+        },
+      },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(
+      html`<upkeep-panel .hass=${hass} .narrow=${true}></upkeep-panel>`
+    );
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('.fab')?.textContent).toContain('New task');
+    expect(el.shadowRoot?.querySelector('.btn-check')).not.toBeNull();
+    expect(el.shadowRoot?.querySelector('.row-menu')).toBeNull();
+
+    (el as any)._openMenuId = 'task-1';
+    await (el as any).updateComplete;
+    const sheet = Array.from(el.shadowRoot!.querySelectorAll('.sheet-action')).map((node) =>
+      node.textContent?.trim()
+    );
+    expect(sheet).toContain('Snooze');
+    expect(sheet).toContain('Edit');
+    expect(sheet).toContain('Delete');
   });
 });

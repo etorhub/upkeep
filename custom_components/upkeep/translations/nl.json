@@ -8,12 +8,14 @@
         "data": {
           "admin_only": "Alleen beheerders",
           "sidebar_title": "Titel in de zijbalk",
-          "sidebar_icon": "Pictogram in de zijbalk"
+          "sidebar_icon": "Pictogram in de zijbalk",
+          "notify_time": "Meldingstijd"
         },
         "data_description": {
           "admin_only": "Als dit is ingeschakeld, zien alleen beheerders Upkeep in de zijbalk. Schakel het uit om het aan alle gebruikers te tonen.",
           "sidebar_title": "Naam in de linkerzijbalk.",
-          "sidebar_icon": "MDI-pictogram voor het zijbalkitem (bijvoorbeeld mdi:hammer-wrench)."
+          "sidebar_icon": "MDI-pictogram voor het zijbalkitem (bijvoorbeeld mdi:hammer-wrench).",
+          "notify_time": "Lokale tijd waarop meldingen vooraf en bij de vervaldatum worden verstuurd."
         }
       }
     },
@@ -28,12 +30,14 @@
         "data": {
           "admin_only": "Alleen beheerders",
           "sidebar_title": "Titel in de zijbalk",
-          "sidebar_icon": "Pictogram in de zijbalk"
+          "sidebar_icon": "Pictogram in de zijbalk",
+          "notify_time": "Meldingstijd"
         },
         "data_description": {
           "admin_only": "Als dit is ingeschakeld, zien alleen beheerders Upkeep in de zijbalk. Schakel het uit om het aan alle gebruikers te tonen.",
           "sidebar_title": "Naam in de linkerzijbalk.",
-          "sidebar_icon": "MDI-pictogram voor het zijbalkitem (bijvoorbeeld mdi:hammer-wrench)."
+          "sidebar_icon": "MDI-pictogram voor het zijbalkitem (bijvoorbeeld mdi:hammer-wrench).",
+          "notify_time": "Lokale tijd waarop meldingen vooraf en bij de vervaldatum worden verstuurd."
         }
       }
     }

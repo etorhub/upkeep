@@ -3,6 +3,7 @@
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.selector import TimeSelector
 
 VERSION = "1.0.0"
 NAME = "Upkeep"
@@ -35,6 +36,9 @@ EVENT_TASK_DUE = "upkeep_task_due"
 
 # Coordinator poll interval (for due-date checks and event firing)
 COORDINATOR_UPDATE_INTERVAL = 300  # 5 minutes
+
+# Local time when upcoming and due notices are sent.
+DEFAULT_NOTIFY_TIME = "08:00"
 
 # Services
 SERVICE_COMPLETE_TASK = "complete_task"
@@ -75,6 +79,7 @@ CONFIG_STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Optional("admin_only", default=False): cv.boolean,
         vol.Optional("sidebar_title", default=PANEL_TITLE): cv.string,
         vol.Optional("sidebar_icon", default=PANEL_ICON): cv.string,
+        vol.Optional("notify_time", default=DEFAULT_NOTIFY_TIME): TimeSelector(),
     }
 )
 
@@ -103,5 +108,12 @@ def get_options_schema(config_entry: ConfigEntry) -> vol.Schema:
                     config_entry.data.get("sidebar_icon", PANEL_ICON),
                 ),
             ): cv.string,
+            vol.Optional(
+                "notify_time",
+                default=config_entry.options.get(
+                    "notify_time",
+                    config_entry.data.get("notify_time", DEFAULT_NOTIFY_TIME),
+                ),
+            ): TimeSelector(),
         }
     )
