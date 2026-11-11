@@ -7,13 +7,22 @@ from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAI
 from homeassistant.components.tag.const import EVENT_TAG_SCANNED
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
-from homeassistant.core import CoreState, Event, HomeAssistant, ServiceCall, callback
+from homeassistant.core import (
+    CoreState,
+    Event,
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+    callback,
+)
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
 from . import const
+from .mutations import new_task_from_data, prepare_updates
 from .coordinator import UpkeepCoordinator
 from .entity_watch import setup_entity_watch
 from .frontend import async_register_card
@@ -140,123 +149,185 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+def _validation_error(err: Exception) -> ServiceValidationError:
+    """Turn a task error into a service validation error."""
+    return ServiceValidationError(str(err))
+
+
+def _store_from_call(hass: HomeAssistant):
+    """Return the loaded task store, or raise when the integration is missing."""
+    store = hass.data.get(const.DOMAIN, {}).get("store")
+    if not store:
+        raise ServiceValidationError("Upkeep is not loaded")
+    return store
+
+
+def _task_id_from_call(store, call: ServiceCall) -> str:
+    """Resolve a service target, raising when the task does not exist."""
+    try:
+        return store.resolve_task_id(
+            entity_id=call.data.get("entity_id"),
+            task_id=call.data.get("task_id"),
+        )
+    except RuntimeError as err:
+        raise _validation_error(err) from err
+
+
+def _service_response(result: dict) -> ServiceResponse:
+    """Return a service response that includes success."""
+    return {"success": True, **result}
+
+
 @callback
 def _register_services(hass: HomeAssistant) -> None:
     """Register services used by upkeep component."""
 
-    async def async_srv_reset(call: ServiceCall) -> None:
+    async def async_srv_add(call: ServiceCall) -> ServiceResponse:
+        """Create a task."""
+        store = _store_from_call(hass)
+        try:
+            task, labels = new_task_from_data(dict(call.data))
+            created = await store.async_add(task, labels)
+        except (RuntimeError, ValueError) as err:
+            raise _validation_error(err) from err
+        return _service_response(created)
+
+    async def async_srv_update(call: ServiceCall) -> ServiceResponse:
+        """Update a task."""
+        store = _store_from_call(hass)
+        task_id = _task_id_from_call(store, call)
+        updates = {
+            key: value
+            for key, value in call.data.items()
+            if key not in ("entity_id", "task_id")
+        }
+        try:
+            prepared = prepare_updates(updates)
+            updated = store.update_task(task_id, prepared)
+        except (RuntimeError, ValueError) as err:
+            raise _validation_error(err) from err
+        return _service_response(updated)
+
+    async def async_srv_remove(call: ServiceCall) -> ServiceResponse:
+        """Delete a task."""
+        store = _store_from_call(hass)
+        task_id = _task_id_from_call(store, call)
+        try:
+            removed = store.delete(task_id)
+        except RuntimeError as err:
+            raise _validation_error(err) from err
+        return _service_response(removed)
+
+    async def async_srv_reset(call: ServiceCall) -> ServiceResponse:
         """Handle reset_last_performed / complete_task service."""
-        entity_id = call.data["entity_id"]
+        store = _store_from_call(hass)
+        task_id = _task_id_from_call(store, call)
         performed_date_str = call.data.get("performed_date")
 
         performed_date = None
         if performed_date_str is not None:
             parsed_date = dt_util.parse_date(performed_date_str)
             if parsed_date is None:
-                raise ValueError(
+                raise ServiceValidationError(
                     f"Could not parse performed_date: {performed_date_str}"
                 )
             combined_date = datetime.combine(parsed_date, datetime.min.time())
             performed_date = dt_util.as_local(combined_date)
 
-        entity_registry = er.async_get(hass)
-        entry = entity_registry.async_get(entity_id)
-        if not entry:
-            _LOGGER.warning("Entity %s not found", entity_id)
-            return
-        task_id = entry.unique_id
-        store = hass.data.get(const.DOMAIN, {}).get("store")
-        if not store:
-            return
-        entity = hass.data[const.DOMAIN].get("entities", {}).get(task_id)
-        if entity is None:
-            return
-        store.update_last_performed(task_id, performed_date)
+        try:
+            store.update_last_performed(task_id, performed_date)
+        except RuntimeError as err:
+            raise _validation_error(err) from err
+        return _service_response(store.mutation_result(task_id))
 
+    async def async_srv_snooze(call: ServiceCall) -> ServiceResponse:
+        """Handle snooze_task service."""
+        store = _store_from_call(hass)
+        task_id = _task_id_from_call(store, call)
+        try:
+            store.snooze_task(
+                task_id,
+                snooze_until=call.data.get("snooze_until"),
+                disable=call.data.get("disable", False),
+            )
+        except RuntimeError as err:
+            raise _validation_error(err) from err
+        return _service_response(store.mutation_result(task_id))
+
+    async def async_srv_enable(call: ServiceCall) -> ServiceResponse:
+        """Handle enable_task service."""
+        store = _store_from_call(hass)
+        task_id = _task_id_from_call(store, call)
+        try:
+            store.enable_task(task_id)
+        except RuntimeError as err:
+            raise _validation_error(err) from err
+        return _service_response(store.mutation_result(task_id))
+
+    async def async_srv_increment(call: ServiceCall) -> ServiceResponse:
+        """Handle increment_counter service."""
+        store = _store_from_call(hass)
+        task_id = _task_id_from_call(store, call)
+        try:
+            store.increment_counter(task_id)
+        except RuntimeError as err:
+            raise _validation_error(err) from err
+        return _service_response(store.mutation_result(task_id))
+
+    response = SupportsResponse.OPTIONAL
+    hass.services.async_register(
+        const.DOMAIN,
+        const.SERVICE_ADD_TASK,
+        async_srv_add,
+        schema=const.SERVICE_ADD_TASK_SCHEMA,
+        supports_response=response,
+    )
+    hass.services.async_register(
+        const.DOMAIN,
+        const.SERVICE_UPDATE_TASK,
+        async_srv_update,
+        schema=const.SERVICE_UPDATE_TASK_SCHEMA,
+        supports_response=response,
+    )
+    hass.services.async_register(
+        const.DOMAIN,
+        const.SERVICE_REMOVE_TASK,
+        async_srv_remove,
+        schema=const.SERVICE_REMOVE_TASK_SCHEMA,
+        supports_response=response,
+    )
     hass.services.async_register(
         const.DOMAIN,
         const.SERVICE_RESET_LAST_PERFORMED,
         async_srv_reset,
         schema=const.SERVICE_COMPLETE_TASK_SCHEMA,
+        supports_response=response,
     )
     hass.services.async_register(
         const.DOMAIN,
         const.SERVICE_COMPLETE_TASK,
         async_srv_reset,
         schema=const.SERVICE_COMPLETE_TASK_SCHEMA,
+        supports_response=response,
     )
-
-    async def async_srv_snooze(call: ServiceCall) -> None:
-        """Handle snooze_task service."""
-        entity_id = call.data["entity_id"]
-        snooze_until = call.data.get("snooze_until")
-        disable = call.data.get("disable", False)
-
-        entity_registry = er.async_get(hass)
-        entry = entity_registry.async_get(entity_id)
-        if not entry:
-            _LOGGER.warning("Entity %s not found", entity_id)
-            return
-        task_id = entry.unique_id
-        store = hass.data.get(const.DOMAIN, {}).get("store")
-        if not store:
-            return
-        try:
-            store.snooze_task(task_id, snooze_until=snooze_until, disable=disable)
-        except RuntimeError as e:
-            _LOGGER.warning("Snooze failed: %s", e)
-
-    async def async_srv_enable(call: ServiceCall) -> None:
-        """Handle enable_task service."""
-        entity_id = call.data["entity_id"]
-
-        entity_registry = er.async_get(hass)
-        entry = entity_registry.async_get(entity_id)
-        if not entry:
-            _LOGGER.warning("Entity %s not found", entity_id)
-            return
-        task_id = entry.unique_id
-        store = hass.data.get(const.DOMAIN, {}).get("store")
-        if not store:
-            return
-        try:
-            store.enable_task(task_id)
-        except RuntimeError as e:
-            _LOGGER.warning("Enable failed: %s", e)
-
     hass.services.async_register(
         const.DOMAIN,
         const.SERVICE_SNOOZE_TASK,
         async_srv_snooze,
         schema=const.SERVICE_SNOOZE_TASK_SCHEMA,
+        supports_response=response,
     )
     hass.services.async_register(
         const.DOMAIN,
         const.SERVICE_ENABLE_TASK,
         async_srv_enable,
         schema=const.SERVICE_ENABLE_TASK_SCHEMA,
+        supports_response=response,
     )
-
-    async def async_srv_increment(call: ServiceCall) -> None:
-        """Handle increment_counter service."""
-        entity_id = call.data["entity_id"]
-        entity_registry = er.async_get(hass)
-        entry = entity_registry.async_get(entity_id)
-        if not entry:
-            _LOGGER.warning("Entity %s not found", entity_id)
-            return
-        task_id = entry.unique_id
-        store = hass.data.get(const.DOMAIN, {}).get("store")
-        if not store:
-            return
-        try:
-            store.increment_counter(task_id)
-        except RuntimeError as e:
-            _LOGGER.warning("Increment failed: %s", e)
-
     hass.services.async_register(
         const.DOMAIN,
         const.SERVICE_INCREMENT_COUNTER,
         async_srv_increment,
         schema=const.SERVICE_INCREMENT_COUNTER_SCHEMA,
+        supports_response=response,
     )

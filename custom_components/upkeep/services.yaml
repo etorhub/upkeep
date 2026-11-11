@@ -3,14 +3,22 @@ reset_last_performed:
   description: >
     Resets the 'last_performed' date for a maintenance task entity.
     Alias for complete_task for backward compatibility.
+    Provide entity_id or task_id.
   fields:
     entity_id:
       name: Entity ID
-      description: The ID of the task entity to reset.
-      required: true
+      description: The task entity to reset. Required when task_id is omitted.
+      required: false
       selector:
         entity:
           domain: binary_sensor
+    task_id:
+      name: Task ID
+      description: The Upkeep task id (the entity's unique id). Required when entity_id is omitted.
+      required: false
+      example: upkeep_0123456789abcdef
+      selector:
+        text:
     performed_date:
       name: Performed Date
       description: Optionally specify the date the task was last performed.
@@ -21,15 +29,24 @@ reset_last_performed:
 
 complete_task:
   name: Complete Task
-  description: Mark a maintenance task as completed (resets last performed date).
+  description: >
+    Mark a maintenance task as completed (resets last performed date).
+    Provide entity_id or task_id.
   fields:
     entity_id:
       name: Entity ID
-      description: The ID of the task entity to complete.
-      required: true
+      description: The task entity to complete. Required when task_id is omitted.
+      required: false
       selector:
         entity:
           domain: binary_sensor
+    task_id:
+      name: Task ID
+      description: The Upkeep task id (the entity's unique id). Required when entity_id is omitted.
+      required: false
+      example: upkeep_0123456789abcdef
+      selector:
+        text:
     performed_date:
       name: Performed Date
       description: Optionally specify the date the task was last performed.
@@ -40,15 +57,24 @@ complete_task:
 
 snooze_task:
   name: Snooze Task
-  description: Snooze or disable a maintenance task.
+  description: >
+    Snooze or disable a maintenance task.
+    Provide entity_id or task_id.
   fields:
     entity_id:
       name: Entity ID
-      description: The ID of the task entity to snooze.
-      required: true
+      description: The task entity to snooze. Required when task_id is omitted.
+      required: false
       selector:
         entity:
           domain: binary_sensor
+    task_id:
+      name: Task ID
+      description: The Upkeep task id (the entity's unique id). Required when entity_id is omitted.
+      required: false
+      example: upkeep_0123456789abcdef
+      selector:
+        text:
     snooze_until:
       name: Snooze Until
       description: Date when the task should auto-re-enable (YYYY-MM-DD). Omit to disable indefinitely.
@@ -65,24 +91,343 @@ snooze_task:
 
 enable_task:
   name: Enable Task
-  description: Re-enable a snoozed or disabled maintenance task.
+  description: >
+    Re-enable a snoozed or disabled maintenance task.
+    Provide entity_id or task_id.
   fields:
     entity_id:
       name: Entity ID
-      description: The ID of the task entity to enable.
-      required: true
+      description: The task entity to enable. Required when task_id is omitted.
+      required: false
       selector:
         entity:
           domain: binary_sensor
+    task_id:
+      name: Task ID
+      description: The Upkeep task id (the entity's unique id). Required when entity_id is omitted.
+      required: false
+      example: upkeep_0123456789abcdef
+      selector:
+        text:
 
 increment_counter:
   name: Increment Counter
-  description: Increment the usage counter for a frequency-based task (e.g. dishwasher runs).
+  description: >
+    Increment the usage counter for a frequency-based task (e.g. dishwasher runs).
+    Provide entity_id or task_id.
   fields:
     entity_id:
       name: Entity ID
-      description: The ID of the frequency task entity to increment.
-      required: true
+      description: The frequency task entity to increment. Required when task_id is omitted.
+      required: false
       selector:
         entity:
           domain: binary_sensor
+    task_id:
+      name: Task ID
+      description: The Upkeep task id (the entity's unique id). Required when entity_id is omitted.
+      required: false
+      example: upkeep_0123456789abcdef
+      selector:
+        text:
+
+add_task:
+  name: Add Task
+  description: >
+    Create a maintenance task. The response includes task_id, entity_id, and the
+    saved task. task_id is also available later as the task_id state attribute.
+  fields:
+    title:
+      name: Title
+      description: Name of the task.
+      required: true
+      example: Replace HVAC filter
+      selector:
+        text:
+    description:
+      name: Description
+      required: false
+      selector:
+        text:
+    task_type:
+      name: Task Type
+      description: time (every N days, weeks, or months) or frequency (after N uses).
+      required: false
+      default: time
+      selector:
+        select:
+          options:
+            - time
+            - frequency
+    interval_value:
+      name: Interval Value
+      description: How many interval units between completions for a time-based task.
+      required: false
+      default: 30
+      selector:
+        number:
+          min: 1
+          mode: box
+    interval_type:
+      name: Interval Type
+      required: false
+      default: days
+      selector:
+        select:
+          options:
+            - days
+            - weeks
+            - months
+    last_performed:
+      name: Last Performed
+      description: ISO date the task was last completed. Defaults to today.
+      required: false
+      example: "2026-01-15"
+      selector:
+        text:
+    tag_id:
+      name: Tag ID
+      description: NFC tag entity id that completes this task when scanned.
+      required: false
+      selector:
+        text:
+    icon:
+      name: Icon
+      required: false
+      example: mdi:air-filter
+      selector:
+        icon:
+    assigned_user:
+      name: Assigned User
+      required: false
+      selector:
+        text:
+    frequency_target:
+      name: Frequency Target
+      description: Number of uses after which a frequency task is due.
+      required: false
+      selector:
+        number:
+          min: 1
+          mode: box
+    current_count:
+      name: Current Count
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          mode: box
+    watched_entity:
+      name: Watched Entity
+      description: Entity whose state changes increment a frequency task.
+      required: false
+      selector:
+        entity:
+    notify_when_due:
+      name: Notify When Due
+      required: false
+      default: false
+      selector:
+        boolean:
+    notify_before:
+      name: Notify Before Due
+      required: false
+      default: false
+      selector:
+        boolean:
+    notify_before_value:
+      name: Notify Lead
+      required: false
+      default: 7
+      selector:
+        number:
+          min: 1
+          mode: box
+    notify_before_unit:
+      name: Notify Lead Unit
+      required: false
+      default: days
+      selector:
+        select:
+          options:
+            - days
+            - weeks
+            - months
+    notify_service:
+      name: Notify Service
+      description: Notify service name, without the notify. prefix. Empty uses the persistent notification.
+      required: false
+      selector:
+        text:
+    labels:
+      name: Labels
+      description: Label ids to assign to the new entity.
+      required: false
+      selector:
+        text:
+          multiple: true
+
+update_task:
+  name: Update Task
+  description: >
+    Change a maintenance task. Provide entity_id or task_id, plus any fields to
+    change. The response includes task_id, entity_id, and the saved task.
+    Unknown fields are rejected.
+  fields:
+    entity_id:
+      name: Entity ID
+      description: The task entity to update. Required when task_id is omitted.
+      required: false
+      selector:
+        entity:
+          domain: binary_sensor
+    task_id:
+      name: Task ID
+      description: The Upkeep task id (the entity's unique id). Required when entity_id is omitted.
+      required: false
+      example: upkeep_0123456789abcdef
+      selector:
+        text:
+    title:
+      name: Title
+      required: false
+      selector:
+        text:
+    description:
+      name: Description
+      description: Pass an empty value to clear the description.
+      required: false
+      selector:
+        text:
+    task_type:
+      name: Task Type
+      required: false
+      selector:
+        select:
+          options:
+            - time
+            - frequency
+    interval_value:
+      name: Interval Value
+      required: false
+      selector:
+        number:
+          min: 1
+          mode: box
+    interval_type:
+      name: Interval Type
+      required: false
+      selector:
+        select:
+          options:
+            - days
+            - weeks
+            - months
+    last_performed:
+      name: Last Performed
+      required: false
+      selector:
+        text:
+    tag_id:
+      name: Tag ID
+      required: false
+      selector:
+        text:
+    icon:
+      name: Icon
+      required: false
+      selector:
+        icon:
+    assigned_user:
+      name: Assigned User
+      required: false
+      selector:
+        text:
+    frequency_target:
+      name: Frequency Target
+      required: false
+      selector:
+        number:
+          min: 1
+          mode: box
+    current_count:
+      name: Current Count
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    watched_entity:
+      name: Watched Entity
+      required: false
+      selector:
+        entity:
+    enabled:
+      name: Enabled
+      required: false
+      selector:
+        boolean:
+    snoozed_until:
+      name: Snoozed Until
+      required: false
+      selector:
+        text:
+    notify_when_due:
+      name: Notify When Due
+      required: false
+      selector:
+        boolean:
+    notify_before:
+      name: Notify Before Due
+      required: false
+      selector:
+        boolean:
+    notify_before_value:
+      name: Notify Lead
+      required: false
+      selector:
+        number:
+          min: 1
+          mode: box
+    notify_before_unit:
+      name: Notify Lead Unit
+      required: false
+      selector:
+        select:
+          options:
+            - days
+            - weeks
+            - months
+    notify_service:
+      name: Notify Service
+      required: false
+      selector:
+        text:
+    labels:
+      name: Labels
+      required: false
+      selector:
+        text:
+          multiple: true
+
+remove_task:
+  name: Remove Task
+  description: >
+    Delete a maintenance task and its entity. Provide entity_id or task_id.
+    The response includes task_id and entity_id.
+  fields:
+    entity_id:
+      name: Entity ID
+      description: The task entity to delete. Required when task_id is omitted.
+      required: false
+      selector:
+        entity:
+          domain: binary_sensor
+    task_id:
+      name: Task ID
+      description: The Upkeep task id (the entity's unique id). Required when entity_id is omitted.
+      required: false
+      example: upkeep_0123456789abcdef
+      selector:
+        text:
