@@ -60,6 +60,60 @@ describe('upkeep-panel add form', () => {
 
     const periodInput = el.shadowRoot?.querySelector('.task-form select');
     expect(periodInput).toBeInstanceOf(HTMLSelectElement);
+    expect(el.shadowRoot?.querySelector('label[for="task-interval"]')?.textContent).toContain(
+      'Every'
+    );
+  });
+
+  it('keeps Add Task in the header only while the form is closed', async () => {
+    const hass = {
+      states: {},
+      connection: {
+        sendMessagePromise: async () => [],
+      },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    const headerButton = el.shadowRoot?.querySelector('.btn-header');
+    expect(headerButton?.textContent?.trim()).toBe('Add Task');
+    expect(
+      Array.from(el.shadowRoot!.querySelectorAll('.filter-chip')).map((node) =>
+        node.textContent?.trim()
+      )
+    ).toEqual(['All', 'Overdue', 'Due soon', 'On track', 'Snoozed']);
+
+    (el as any)._formMode = 'add';
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('.btn-header')).toBeNull();
+    const formButtons = Array.from(el.shadowRoot!.querySelectorAll('.task-form button')).map(
+      (node) => node.textContent?.trim()
+    );
+    expect(formButtons).toEqual(['Cancel', 'Add Task']);
+    expect(el.shadowRoot?.querySelector('.empty')).toBeNull();
+  });
+
+  it('disables submit until the title is filled', async () => {
+    const hass = {
+      states: {},
+      connection: {
+        sendMessagePromise: async () => [],
+      },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    (el as any)._formMode = 'add';
+    await (el as any).updateComplete;
+
+    const submit = () =>
+      el.shadowRoot?.querySelector('.task-form button.btn-done') as HTMLButtonElement;
+    expect(submit().disabled).toBe(true);
+
+    (el as any)._draftTitle = 'Change air filter';
+    await (el as any).updateComplete;
+    expect(submit().disabled).toBe(false);
   });
 
   it('loads tasks from unwrapped WebSocket result (Home Assistant behavior)', async () => {
