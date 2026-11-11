@@ -109,11 +109,5 @@
         }
       }
     }
-  },
-  "notices": {
-    "title": "Upkeep",
-    "due": "{title} è in scadenza",
-    "before": "{title} si avvicina",
-    "reset_failed": "Upkeep non ha potuto azzerare il contatore di vita di {title}"
   }
 }

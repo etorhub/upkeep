@@ -2,7 +2,31 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const REQUIRED = ['ca', 'de', 'en', 'es', 'fr', 'it', 'nl', 'pt'];
-const CATALOGS = ['src/localize/languages', 'custom_components/upkeep/translations'];
+const HASS_TRANSLATIONS = 'custom_components/upkeep/translations';
+const CATALOGS = ['src/localize/languages', HASS_TRANSLATIONS, 'custom_components/upkeep/strings'];
+// Roots accepted by hassfest script/hassfest/translations.py. A custom root fails CI.
+const HASSFEST_ROOTS = new Set([
+  'title',
+  'config',
+  'config_subentries',
+  'options',
+  'preview_features',
+  'selector',
+  'device_automation',
+  'system_health',
+  'config_panel',
+  'application_credentials',
+  'issues',
+  'entity_component',
+  'device',
+  'entity',
+  'exceptions',
+  'services',
+  'conditions',
+  'triggers',
+  'conversation',
+  'common',
+]);
 const SOURCE_ROOTS = ['src', 'panel-src'];
 const errors = [];
 
@@ -44,7 +68,23 @@ function languageFiles(dir) {
     .sort();
 }
 
+function checkHassfestRoots(dir) {
+  if (dir !== HASS_TRANSLATIONS) return;
+  for (const code of languageFiles(dir)) {
+    const path = join(dir, `${code}.json`);
+    const data = readJson(path);
+    if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
+    const unknown = Object.keys(data).filter((key) => !HASSFEST_ROOTS.has(key));
+    if (unknown.length > 0) {
+      fail(
+        `${path}: ${unknown.join(', ')} is not a hassfest translation root. Put integration-only strings in custom_components/upkeep/strings/`,
+      );
+    }
+  }
+}
+
 function checkCatalog(dir) {
+  checkHassfestRoots(dir);
   const found = languageFiles(dir);
   if (found.join() !== REQUIRED.join()) {
     fail(`${dir}: expected ${REQUIRED.join(', ')}; found ${found.join(', ') || '(none)'}`);

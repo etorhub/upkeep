@@ -39,13 +39,16 @@ logger:
 
 ## Adding Translations
 
-User-facing copy lives in two catalogs, and every supported language must stay complete:
+User-facing copy lives in three catalogs, and every supported language must stay complete:
 
 - Frontend (card, card editor, and sidebar panel): `src/localize/languages/`
-- Integration config flow and services: `custom_components/upkeep/translations/`
+- Home Assistant config flow and services: `custom_components/upkeep/translations/`
+- Persistent notifications and other integration-only copy: `custom_components/upkeep/strings/`
+
+Hassfest validates `translations/`. A file there may only contain official roots (`config`, `options`, `services`, and the other keys hassfest accepts). A custom object such as `notices` fails CI. Put that copy in `strings/` instead. `notice_catalog` loads the flat string map in `strings/{language}.json`.
 
 The required languages are English (`en`), Spanish (`es`), Catalan (`ca`), French (`fr`), German (`de`), Italian (`it`), Dutch (`nl`), and European Portuguese (`pt`). `en.json` is the reference in each directory. Other files must have the same keys, no empty strings, and the same `{placeholder}` tokens.
 
 Day and use counts use a singular and a plural string, chosen with `Intl.PluralRules`: `card.day_left_one` / `card.day_left_other`, and the matching overdue and use keys. Pass values through `localize(key, { count }, language)`.
 
-`npm run check:i18n` checks both catalogs and that every `localize()` and `_t()` call names a key in the frontend English file. CI and the pre-commit hook run that check. Words that are the same in English and another language, such as `Version` or `Filter`, are allowed.
+`npm run check:i18n` checks all three catalogs, rejects unknown roots in `translations/`, and checks that every `localize()` and `_t()` call names a key in the frontend English file. CI and the pre-commit hook run that check. Words that are the same in English and another language, such as `Version` or `Filter`, are allowed.

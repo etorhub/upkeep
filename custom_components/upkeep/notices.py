@@ -187,18 +187,20 @@ def persistent_notification_ids(task_id: str) -> tuple[str, ...]:
 
 
 def notice_catalog(language: str | None) -> dict[str, str]:
-    """Load the backend notice strings for a language, falling back to English."""
+    """Load notice strings for a language, falling back to English.
+
+    The files live in ``strings/``. Hassfest rejects custom keys in ``translations/``.
+    """
     import json
     from pathlib import Path
 
-    directory = Path(__file__).parent / "translations"
+    directory = Path(__file__).parent / "strings"
     code = (language or "en").split("-")[0]
     path = directory / f"{code}.json"
     if not path.exists():
         path = directory / "en.json"
     document = json.loads(path.read_text(encoding="utf-8"))
-    notices = document.get("notices") or {}
-    return {key: value for key, value in notices.items() if isinstance(value, str)}
+    return {key: value for key, value in document.items() if isinstance(value, str)}
 
 
 @dataclass(frozen=True)

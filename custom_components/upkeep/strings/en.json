@@ -1,0 +1,6 @@
+{
+  "title": "Upkeep",
+  "due": "{title} is due",
+  "before": "{title} is coming up",
+  "reset_failed": "Upkeep could not reset the life counter for {title}"
+}

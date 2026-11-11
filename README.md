@@ -60,7 +60,7 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 - **One-tap completion** — Mark tasks as done from the card.
 - **Multiple layouts** — Grid, list, or compact views.
 - **Sorting & filtering** — Sort by urgency, name, or due date. Filter by status including snoozed.
-- **Localization** — English, Spanish, Catalan, French, German, Italian, Dutch, and Portuguese for the card, the sidebar panel, and the integration setup screens.
+- **Localization** — English, Spanish, Catalan, French, German, Italian, Dutch, and Portuguese for the card, the sidebar panel, setup screens, and persistent notifications. Setup and service strings stay in the Home Assistant translation files. Notification copy lives in `custom_components/upkeep/strings/`.
 
 ---
 
@@ -275,7 +275,7 @@ npx lefthook install
 | `npm run format`              | Prettier format                                                           |
 | `npm run format:check`        | Prettier check                                                            |
 | `npm run typecheck`           | TypeScript check                                                          |
-| `npm run check:i18n`          | Check translation catalogs are complete                                   |
+| `npm run check:i18n`          | Check catalogs are complete and translation files use hassfest keys       |
 | `npm run test`                | Run Vitest tests                                                          |
 | `npm run test:watch`          | Vitest watch mode                                                         |
 | `npm run commit`              | Interactive commit wizard (Commitizen)                                    |

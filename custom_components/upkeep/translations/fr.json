@@ -109,11 +109,5 @@
         }
       }
     }
-  },
-  "notices": {
-    "title": "Upkeep",
-    "due": "{title} est à faire",
-    "before": "{title} approche",
-    "reset_failed": "Upkeep n'a pas pu réinitialiser le compteur de durée de {title}"
   }
 }

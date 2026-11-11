@@ -109,11 +109,5 @@
         }
       }
     }
-  },
-  "notices": {
-    "title": "Upkeep",
-    "due": "{title} está pendiente",
-    "before": "{title} se acerca",
-    "reset_failed": "Upkeep no pudo restablecer el contador de vida de {title}"
   }
 }

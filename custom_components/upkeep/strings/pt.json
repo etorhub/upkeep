@@ -1,0 +1,6 @@
+{
+  "title": "Upkeep",
+  "due": "{title} está para fazer",
+  "before": "{title} está a chegar",
+  "reset_failed": "O Upkeep não conseguiu repor o contador de vida de {title}"
+}

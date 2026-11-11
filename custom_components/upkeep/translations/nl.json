@@ -109,11 +109,5 @@
         }
       }
     }
-  },
-  "notices": {
-    "title": "Upkeep",
-    "due": "{title} is nodig",
-    "before": "{title} komt eraan",
-    "reset_failed": "Upkeep kon de levensduurteller van {title} niet resetten"
   }
 }
