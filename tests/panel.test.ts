@@ -46,6 +46,29 @@ describe('computePanelTaskStatus', () => {
 });
 
 describe('upkeep-panel add form', () => {
+  it('translates the header when Home Assistant language is Catalan', async () => {
+    const hass = {
+      language: 'ca',
+      locale: { language: 'ca' },
+      states: {},
+      connection: {
+        sendMessagePromise: async () => [],
+      },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('.btn-header')?.textContent?.trim()).toBe(
+      'Afegeix una tasca'
+    );
+    expect(
+      Array.from(el.shadowRoot!.querySelectorAll('.filter-chip')).map((node) =>
+        node.textContent?.trim()
+      )
+    ).toEqual(['Totes', 'Vençuda', 'Propera', 'Al dia', 'Ajornada']);
+  });
+
   it('renders period input as native select', async () => {
     const hass = {
       states: {},

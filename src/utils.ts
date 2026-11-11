@@ -1,11 +1,12 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
-import { TaskData } from './types';
 import {
   HOME_MAINTENANCE_ATTRIBUTES,
   HOME_MAINTENANCE_ATTRIBUTES_ALT,
   PROGRESS_THRESHOLDS,
 } from './const';
+import { localize } from './localize/localize';
+import { TaskData } from './types';
 
 export function isMaintenanceEntity(stateObj: HassEntity): boolean {
   if (!stateObj.entity_id.startsWith('binary_sensor.')) return false;
@@ -189,33 +190,32 @@ export function formatDaysRemaining(
   taskType?: 'time' | 'frequency'
 ): string {
   if (taskType === 'frequency') {
-    return days <= 0 ? _todayLabel(locale) : `${days} use${days !== 1 ? 's' : ''} left`;
+    if (days <= 0) return localize('card.no_uses_left', undefined, locale);
+    if (_isPluralOne(locale, days)) {
+      return localize('card.use_left_one', { count: days }, locale);
+    }
+    return localize('card.use_left_other', { count: days }, locale);
   }
   if (days < 0) {
-    const abs = Math.abs(days);
-    return _pluralDays(abs, locale, true);
+    const count = Math.abs(days);
+    if (_isPluralOne(locale, count)) {
+      return localize('card.day_overdue_one', { count }, locale);
+    }
+    return localize('card.day_overdue_other', { count }, locale);
   }
-  if (days === 0) {
-    return _todayLabel(locale);
+  if (days === 0) return localize('card.today', undefined, locale);
+  if (_isPluralOne(locale, days)) {
+    return localize('card.day_left_one', { count: days }, locale);
   }
-  return _pluralDays(days, locale, false);
+  return localize('card.day_left_other', { count: days }, locale);
 }
 
-function _todayLabel(locale: string): string {
-  if (locale.startsWith('ca')) return 'Avui';
-  if (locale.startsWith('es')) return 'Hoy';
-  return 'Today';
-}
-
-function _pluralDays(count: number, locale: string, overdue: boolean): string {
-  if (locale.startsWith('ca')) {
-    const unit = count === 1 ? 'dia' : 'dies';
-    return overdue ? `${count} ${unit} de retard` : `${count} ${unit} restants`;
+function _isPluralOne(locale: string, count: number): boolean {
+  const tag = locale.replace(/['"]+/g, '').replaceAll('_', '-');
+  try {
+    return new Intl.PluralRules(tag).select(count) === 'one';
+  } catch {
+    const base = tag.split('-')[0] || 'en';
+    return new Intl.PluralRules(base).select(count) === 'one';
   }
-  if (locale.startsWith('es')) {
-    const unit = count === 1 ? 'día' : 'días';
-    return overdue ? `${count} ${unit} de retraso` : `${count} ${unit} restantes`;
-  }
-  const unit = count === 1 ? 'day' : 'days';
-  return overdue ? `${count} ${unit} overdue` : `${count} ${unit} left`;
 }

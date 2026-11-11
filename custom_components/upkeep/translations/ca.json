@@ -1,0 +1,109 @@
+{
+  "config": {
+    "flow_title": "Upkeep",
+    "step": {
+      "user": {
+        "title": "Configura l'Upkeep",
+        "description": "Upkeep s'afegeix a la barra lateral de Home Assistant quan es configura.",
+        "data": {
+          "admin_only": "Només administradors",
+          "sidebar_title": "Títol de la barra lateral",
+          "sidebar_icon": "Icona de la barra lateral"
+        },
+        "data_description": {
+          "admin_only": "Si està activat, només els administradors veuen Upkeep a la barra lateral. Desactiva-ho per mostrar-lo a tots els usuaris.",
+          "sidebar_title": "Nom que es mostra a la barra lateral esquerra.",
+          "sidebar_icon": "Icona MDI de l'element de la barra lateral (per exemple, mdi:hammer-wrench)."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Només es permet una instància d'Upkeep."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Upkeep s'afegeix a la barra lateral de Home Assistant quan es configura.",
+        "data": {
+          "admin_only": "Només administradors",
+          "sidebar_title": "Títol de la barra lateral",
+          "sidebar_icon": "Icona de la barra lateral"
+        },
+        "data_description": {
+          "admin_only": "Si està activat, només els administradors veuen Upkeep a la barra lateral. Desactiva-ho per mostrar-lo a tots els usuaris.",
+          "sidebar_title": "Nom que es mostra a la barra lateral esquerra.",
+          "sidebar_icon": "Icona MDI de l'element de la barra lateral (per exemple, mdi:hammer-wrench)."
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Restableix l'última execució",
+      "description": "Restableix la data de l'última vegada que s'ha fet una tasca de manteniment. Àlies de complete_task per compatibilitat amb versions anteriors.",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entitat",
+          "description": "ID de l'entitat de la tasca que es vol restablir."
+        },
+        "performed_date": {
+          "name": "Data d'execució",
+          "description": "Data en què es va fer la tasca per última vegada, si en vols indicar una."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Completa la tasca",
+      "description": "Marca una tasca de manteniment com a completada (reinicia la data de l'última execució).",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entitat",
+          "description": "ID de l'entitat de la tasca que es vol completar."
+        },
+        "performed_date": {
+          "name": "Data d'execució",
+          "description": "Data en què es va fer la tasca per última vegada, si en vols indicar una."
+        }
+      }
+    },
+    "snooze_task": {
+      "name": "Ajorna la tasca",
+      "description": "Ajorna o desactiva una tasca de manteniment.",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entitat",
+          "description": "ID de l'entitat de la tasca que es vol ajornar."
+        },
+        "snooze_until": {
+          "name": "Ajorna fins a",
+          "description": "Data en què la tasca s'ha de reactivar automàticament (AAAA-MM-DD). Omet-la per desactivar-la indefinidament."
+        },
+        "disable": {
+          "name": "Desactiva",
+          "description": "Si és cert, desactiva la tasca sense una data de reactivació."
+        }
+      }
+    },
+    "enable_task": {
+      "name": "Activa la tasca",
+      "description": "Torna a activar una tasca ajornada o desactivada.",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entitat",
+          "description": "ID de l'entitat de la tasca que es vol activar."
+        }
+      }
+    },
+    "increment_counter": {
+      "name": "Incrementa el comptador",
+      "description": "Incrementa el comptador d'ús d'una tasca basada en la freqüència (per exemple, rentades del rentavaixelles).",
+      "fields": {
+        "entity_id": {
+          "name": "ID de l'entitat",
+          "description": "ID de l'entitat de la tasca de freqüència que es vol incrementar."
+        }
+      }
+    }
+  }
+}

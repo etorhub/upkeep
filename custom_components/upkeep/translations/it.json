@@ -1,0 +1,109 @@
+{
+  "config": {
+    "flow_title": "Upkeep",
+    "step": {
+      "user": {
+        "title": "Configura Upkeep",
+        "description": "Upkeep si aggiunge alla barra laterale di Home Assistant una volta configurato.",
+        "data": {
+          "admin_only": "Solo amministratori",
+          "sidebar_title": "Titolo della barra laterale",
+          "sidebar_icon": "Icona della barra laterale"
+        },
+        "data_description": {
+          "admin_only": "Se attivo, solo gli amministratori vedono Upkeep nella barra laterale. Disattivalo per mostrarlo a tutti gli utenti.",
+          "sidebar_title": "Nome mostrato nella barra laterale sinistra.",
+          "sidebar_icon": "Icona MDI della voce nella barra laterale (per esempio mdi:hammer-wrench)."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "È consentita una sola istanza di Upkeep."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Upkeep si aggiunge alla barra laterale di Home Assistant una volta configurato.",
+        "data": {
+          "admin_only": "Solo amministratori",
+          "sidebar_title": "Titolo della barra laterale",
+          "sidebar_icon": "Icona della barra laterale"
+        },
+        "data_description": {
+          "admin_only": "Se attivo, solo gli amministratori vedono Upkeep nella barra laterale. Disattivalo per mostrarlo a tutti gli utenti.",
+          "sidebar_title": "Nome mostrato nella barra laterale sinistra.",
+          "sidebar_icon": "Icona MDI della voce nella barra laterale (per esempio mdi:hammer-wrench)."
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Reimposta ultima esecuzione",
+      "description": "Reimposta la data dell'ultima esecuzione di un'attività di manutenzione. Alias di complete_task per compatibilità.",
+      "fields": {
+        "entity_id": {
+          "name": "ID entità",
+          "description": "ID dell'entità dell'attività da reimpostare."
+        },
+        "performed_date": {
+          "name": "Data di esecuzione",
+          "description": "Specifica facoltativamente la data dell'ultima esecuzione."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Completa attività",
+      "description": "Segna un'attività di manutenzione come completata (reimposta la data dell'ultima esecuzione).",
+      "fields": {
+        "entity_id": {
+          "name": "ID entità",
+          "description": "ID dell'entità dell'attività da completare."
+        },
+        "performed_date": {
+          "name": "Data di esecuzione",
+          "description": "Specifica facoltativamente la data dell'ultima esecuzione."
+        }
+      }
+    },
+    "snooze_task": {
+      "name": "Posticipa attività",
+      "description": "Posticipa o disattiva un'attività di manutenzione.",
+      "fields": {
+        "entity_id": {
+          "name": "ID entità",
+          "description": "ID dell'entità dell'attività da posticipare."
+        },
+        "snooze_until": {
+          "name": "Posticipa fino al",
+          "description": "Data in cui l'attività deve riattivarsi (AAAA-MM-GG). Omettila per disattivarla a tempo indeterminato."
+        },
+        "disable": {
+          "name": "Disattiva",
+          "description": "Se vero, disattiva l'attività senza una data di riattivazione."
+        }
+      }
+    },
+    "enable_task": {
+      "name": "Attiva attività",
+      "description": "Riattiva un'attività posticipata o disattivata.",
+      "fields": {
+        "entity_id": {
+          "name": "ID entità",
+          "description": "ID dell'entità dell'attività da attivare."
+        }
+      }
+    },
+    "increment_counter": {
+      "name": "Incrementa contatore",
+      "description": "Incrementa il contatore di utilizzo di un'attività basata sulla frequenza (per esempio i lavaggi della lavastoviglie).",
+      "fields": {
+        "entity_id": {
+          "name": "ID entità",
+          "description": "ID dell'entità dell'attività di frequenza da incrementare."
+        }
+      }
+    }
+  }
+}

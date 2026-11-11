@@ -1,0 +1,109 @@
+{
+  "config": {
+    "flow_title": "Upkeep",
+    "step": {
+      "user": {
+        "title": "Configurar o Upkeep",
+        "description": "O Upkeep adiciona-se à barra lateral do Home Assistant quando é configurado.",
+        "data": {
+          "admin_only": "Apenas administradores",
+          "sidebar_title": "Título da barra lateral",
+          "sidebar_icon": "Ícone da barra lateral"
+        },
+        "data_description": {
+          "admin_only": "Quando está ativo, apenas os administradores veem o Upkeep na barra lateral. Desative para o mostrar a todos os utilizadores.",
+          "sidebar_title": "Nome apresentado na barra lateral esquerda.",
+          "sidebar_icon": "Ícone MDI do item da barra lateral (por exemplo, mdi:hammer-wrench)."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Só é permitida uma instância do Upkeep."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "O Upkeep adiciona-se à barra lateral do Home Assistant quando é configurado.",
+        "data": {
+          "admin_only": "Apenas administradores",
+          "sidebar_title": "Título da barra lateral",
+          "sidebar_icon": "Ícone da barra lateral"
+        },
+        "data_description": {
+          "admin_only": "Quando está ativo, apenas os administradores veem o Upkeep na barra lateral. Desative para o mostrar a todos os utilizadores.",
+          "sidebar_title": "Nome apresentado na barra lateral esquerda.",
+          "sidebar_icon": "Ícone MDI do item da barra lateral (por exemplo, mdi:hammer-wrench)."
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Repor a última execução",
+      "description": "Repõe a data da última execução de uma tarefa de manutenção. Nome alternativo de complete_task para compatibilidade.",
+      "fields": {
+        "entity_id": {
+          "name": "ID da entidade",
+          "description": "ID da entidade da tarefa a repor."
+        },
+        "performed_date": {
+          "name": "Data de execução",
+          "description": "Indique opcionalmente a data em que a tarefa foi executada pela última vez."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Concluir tarefa",
+      "description": "Marca uma tarefa de manutenção como concluída (repõe a data da última execução).",
+      "fields": {
+        "entity_id": {
+          "name": "ID da entidade",
+          "description": "ID da entidade da tarefa a concluir."
+        },
+        "performed_date": {
+          "name": "Data de execução",
+          "description": "Indique opcionalmente a data em que a tarefa foi executada pela última vez."
+        }
+      }
+    },
+    "snooze_task": {
+      "name": "Adiar tarefa",
+      "description": "Adia ou desativa uma tarefa de manutenção.",
+      "fields": {
+        "entity_id": {
+          "name": "ID da entidade",
+          "description": "ID da entidade da tarefa a adiar."
+        },
+        "snooze_until": {
+          "name": "Adiar até",
+          "description": "Data em que a tarefa deve ser reativada (AAAA-MM-DD). Omita para a desativar indefinidamente."
+        },
+        "disable": {
+          "name": "Desativar",
+          "description": "Se for verdadeiro, desativa a tarefa sem uma data de reativação."
+        }
+      }
+    },
+    "enable_task": {
+      "name": "Ativar tarefa",
+      "description": "Volta a ativar uma tarefa adiada ou desativada.",
+      "fields": {
+        "entity_id": {
+          "name": "ID da entidade",
+          "description": "ID da entidade da tarefa a ativar."
+        }
+      }
+    },
+    "increment_counter": {
+      "name": "Incrementar contador",
+      "description": "Incrementa o contador de utilização de uma tarefa baseada na frequência (por exemplo, lavagens da máquina de lavar loiça).",
+      "fields": {
+        "entity_id": {
+          "name": "ID da entidade",
+          "description": "ID da entidade da tarefa de frequência a incrementar."
+        }
+      }
+    }
+  }
+}

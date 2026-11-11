@@ -1,0 +1,109 @@
+{
+  "config": {
+    "flow_title": "Upkeep",
+    "step": {
+      "user": {
+        "title": "Upkeep einrichten",
+        "description": "Upkeep fügt sich nach der Einrichtung der Home-Assistant-Seitenleiste hinzu.",
+        "data": {
+          "admin_only": "Nur Administratoren",
+          "sidebar_title": "Titel der Seitenleiste",
+          "sidebar_icon": "Symbol der Seitenleiste"
+        },
+        "data_description": {
+          "admin_only": "Wenn aktiviert, sehen nur Administratoren Upkeep in der Seitenleiste. Deaktivieren, um es allen Benutzern anzuzeigen.",
+          "sidebar_title": "Name in der linken Seitenleiste.",
+          "sidebar_icon": "MDI-Symbol für den Seitenleisteneintrag (zum Beispiel mdi:hammer-wrench)."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Es ist nur eine Instanz von Upkeep zulässig."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Upkeep fügt sich nach der Einrichtung der Home-Assistant-Seitenleiste hinzu.",
+        "data": {
+          "admin_only": "Nur Administratoren",
+          "sidebar_title": "Titel der Seitenleiste",
+          "sidebar_icon": "Symbol der Seitenleiste"
+        },
+        "data_description": {
+          "admin_only": "Wenn aktiviert, sehen nur Administratoren Upkeep in der Seitenleiste. Deaktivieren, um es allen Benutzern anzuzeigen.",
+          "sidebar_title": "Name in der linken Seitenleiste.",
+          "sidebar_icon": "MDI-Symbol für den Seitenleisteneintrag (zum Beispiel mdi:hammer-wrench)."
+        }
+      }
+    }
+  },
+  "services": {
+    "reset_last_performed": {
+      "name": "Letzte Ausführung zurücksetzen",
+      "description": "Setzt das Datum der letzten Ausführung einer Wartungsaufgabe zurück. Alias von complete_task für Abwärtskompatibilität.",
+      "fields": {
+        "entity_id": {
+          "name": "Entitäts-ID",
+          "description": "ID der zurückzusetzenden Aufgabenentität."
+        },
+        "performed_date": {
+          "name": "Ausführungsdatum",
+          "description": "Optional das Datum der letzten Ausführung angeben."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Aufgabe erledigen",
+      "description": "Markiert eine Wartungsaufgabe als erledigt (setzt das Datum der letzten Ausführung zurück).",
+      "fields": {
+        "entity_id": {
+          "name": "Entitäts-ID",
+          "description": "ID der zu erledigenden Aufgabenentität."
+        },
+        "performed_date": {
+          "name": "Ausführungsdatum",
+          "description": "Optional das Datum der letzten Ausführung angeben."
+        }
+      }
+    },
+    "snooze_task": {
+      "name": "Aufgabe verschieben",
+      "description": "Verschiebt oder deaktiviert eine Wartungsaufgabe.",
+      "fields": {
+        "entity_id": {
+          "name": "Entitäts-ID",
+          "description": "ID der zu verschiebenden Aufgabenentität."
+        },
+        "snooze_until": {
+          "name": "Verschieben bis",
+          "description": "Datum, an dem die Aufgabe automatisch wieder aktiviert werden soll (JJJJ-MM-TT). Weglassen, um sie auf unbestimmte Zeit zu deaktivieren."
+        },
+        "disable": {
+          "name": "Deaktivieren",
+          "description": "Wenn wahr, wird die Aufgabe ohne Verschiebedatum deaktiviert."
+        }
+      }
+    },
+    "enable_task": {
+      "name": "Aufgabe aktivieren",
+      "description": "Aktiviert eine verschobene oder deaktivierte Wartungsaufgabe wieder.",
+      "fields": {
+        "entity_id": {
+          "name": "Entitäts-ID",
+          "description": "ID der zu aktivierenden Aufgabenentität."
+        }
+      }
+    },
+    "increment_counter": {
+      "name": "Zähler erhöhen",
+      "description": "Erhöht den Nutzungszähler einer häufigkeitsbasierten Aufgabe (zum Beispiel Spülmaschinengänge).",
+      "fields": {
+        "entity_id": {
+          "name": "Entitäts-ID",
+          "description": "ID der zu erhöhenden Häufigkeitsaufgabe."
+        }
+      }
+    }
+  }
+}

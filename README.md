@@ -5,6 +5,15 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 [![Open your Home Assistant instance and show the add repository dialog for this repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=etorhub&repository=upkeep&category=integration)
 [![Vibe Coded](https://img.shields.io/badge/Vibe_Coded-ff69b4?style=for-the-badge)](https://github.com/danielrosehill/Is-Vibe-Coded)
 
+[![English](https://img.shields.io/badge/English-en-1f6feb)](https://github.com/etorhub/upkeep/blob/main/src/localize/languages/en.json)
+[![Español](https://img.shields.io/badge/Espa%C3%B1ol-es-c60b1e)](https://github.com/etorhub/upkeep/blob/main/src/localize/languages/es.json)
+[![Català](https://img.shields.io/badge/Catal%C3%A0-ca-fcdd09)](https://github.com/etorhub/upkeep/blob/main/src/localize/languages/ca.json)
+[![Français](https://img.shields.io/badge/Fran%C3%A7ais-fr-0055a4)](https://github.com/etorhub/upkeep/blob/main/src/localize/languages/fr.json)
+[![Deutsch](https://img.shields.io/badge/Deutsch-de-000000)](https://github.com/etorhub/upkeep/blob/main/src/localize/languages/de.json)
+[![Italiano](https://img.shields.io/badge/Italiano-it-009246)](https://github.com/etorhub/upkeep/blob/main/src/localize/languages/it.json)
+[![Nederlands](https://img.shields.io/badge/Nederlands-nl-ff6600)](https://github.com/etorhub/upkeep/blob/main/src/localize/languages/nl.json)
+[![Português](https://img.shields.io/badge/Portugu%C3%AAs-pt-006600)](https://github.com/etorhub/upkeep/blob/main/src/localize/languages/pt.json)
+
 ---
 
 ## Tech Stack
@@ -48,7 +57,7 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 - **One-tap completion** — Mark tasks as done from the card.
 - **Multiple layouts** — Grid, list, or compact views.
 - **Sorting & filtering** — Sort by urgency, name, or due date. Filter by status including snoozed.
-- **Localization** — English, Spanish, Catalan, French, German, Italian, Dutch, and Portuguese.
+- **Localization** — English, Spanish, Catalan, French, German, Italian, Dutch, and Portuguese for the card, the sidebar panel, and the integration setup screens.
 
 ---
 
@@ -209,6 +218,7 @@ npx lefthook install
 | `npm run format`          | Prettier format                                |
 | `npm run format:check`    | Prettier check                                 |
 | `npm run typecheck`       | TypeScript check                               |
+| `npm run check:i18n`      | Check translation catalogs are complete        |
 | `npm run test`            | Run Vitest tests                               |
 | `npm run test:watch`      | Vitest watch mode                              |
 | `npm run commit`          | Interactive commit wizard (Commitizen)         |

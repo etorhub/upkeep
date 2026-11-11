@@ -39,10 +39,17 @@ function getNestedValue(obj: unknown, path: string): string | undefined {
   return typeof current === 'string' ? current : undefined;
 }
 
+function applyVars(template: string, vars?: Record<string, string | number>): string {
+  if (!vars) return template;
+  return template.replace(/\{([a-z_]+)\}/g, (match, name: string) => {
+    const value = vars[name];
+    return value === undefined ? match : String(value);
+  });
+}
+
 export function localize(
   key: string,
-  search?: string,
-  replace?: string,
+  vars?: Record<string, string | number>,
   language?: string
 ): string {
   const lang = resolveLanguageCode(language);
@@ -58,9 +65,6 @@ export function localize(
     translated = getNestedValue(languages.en, key);
   }
 
-  if (translated && search && replace) {
-    translated = translated.replace(search, replace);
-  }
-
-  return translated ?? key;
+  if (!translated) return key;
+  return applyVars(translated, vars);
 }
