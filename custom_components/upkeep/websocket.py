@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
+from .notices import NOTIFY_UNITS, validate_notice_updates
 from .store import UpkeepTask
 
 
@@ -87,6 +88,14 @@ def websocket_add_task(
             dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
         )
 
+    notice_fields = {}
+    if "notify_service" in msg:
+        notice_fields["notify_service"] = msg.get("notify_service")
+    notice_error = validate_notice_updates(notice_fields)
+    if notice_error:
+        conn.send_error(msg["id"], "invalid_notify", notice_error)
+        return
+
     task_type = msg.get("task_type", "time")
     new_task = UpkeepTask(
         id=f"upkeep_{uuid.uuid4().hex}",
@@ -103,6 +112,10 @@ def websocket_add_task(
         current_count=msg.get("current_count", 0),
         watched_entity=msg.get("watched_entity"),
         notify_when_due=msg.get("notify_when_due", False),
+        notify_before=msg.get("notify_before", False),
+        notify_before_value=msg.get("notify_before_value", 7),
+        notify_before_unit=msg.get("notify_before_unit", "days"),
+        notify_service=notice_fields.get("notify_service"),
     )
 
     labels = msg.get("labels", [])
@@ -126,6 +139,12 @@ def websocket_update_task(
         return
     task_id = msg["task_id"]
     updates = msg.get("updates", {})
+    for internal_key in (
+        "notified_before_due",
+        "notified_due_on",
+        "notified_frequency_due",
+    ):
+        updates.pop(internal_key, None)
 
     if "last_performed" in updates:
         last_str = updates["last_performed"]
@@ -138,6 +157,11 @@ def websocket_update_task(
         updates["last_performed"] = last_performed or (
             dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
         )
+
+    notice_error = validate_notice_updates(updates)
+    if notice_error:
+        conn.send_error(msg["id"], "invalid_notify", notice_error)
+        return
 
     try:
         store.update_task(task_id, updates)
@@ -305,6 +329,10 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
                 vol.Optional("current_count", default=0): int,
                 vol.Optional("watched_entity"): str,
                 vol.Optional("notify_when_due", default=False): bool,
+                vol.Optional("notify_before", default=False): bool,
+                vol.Optional("notify_before_value", default=7): vol.All(int, vol.Range(min=1)),
+                vol.Optional("notify_before_unit", default="days"): vol.In(sorted(NOTIFY_UNITS)),
+                vol.Optional("notify_service"): vol.Any(None, str),
                 vol.Optional("labels"): [str],
             }
         ),

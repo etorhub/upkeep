@@ -16,4 +16,8 @@ export interface Task {
   enabled: boolean;
   snoozed_until?: string;
   notify_when_due?: boolean;
+  notify_before?: boolean;
+  notify_before_value?: number;
+  notify_before_unit?: string;
+  notify_service?: string | null;
 }

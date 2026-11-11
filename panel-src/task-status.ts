@@ -12,7 +12,7 @@ function midnight(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function addInterval(last: Date, intervalValue: number, intervalType: string): Date {
+export function addInterval(last: Date, intervalValue: number, intervalType: string): Date {
   const due = new Date(last);
   if (intervalType === 'weeks') {
     due.setDate(due.getDate() + intervalValue * 7);
@@ -75,4 +75,38 @@ export function computePanelTaskStatus(
   }
 
   return { urgency, days_remaining: daysRemaining, progress };
+}
+
+export function subtractInterval(due: Date, value: number, unit: string): Date {
+  const start = new Date(due);
+  if (unit === 'weeks') {
+    start.setDate(start.getDate() - value * 7);
+  } else if (unit === 'months') {
+    start.setMonth(start.getMonth() - value);
+  } else {
+    start.setDate(start.getDate() - value);
+  }
+  return start;
+}
+
+/** A lead that reaches the completion date would notify the morning after the task is done. */
+export function advanceNoticeSkipped(
+  lastPerformed: Date,
+  intervalValue: number,
+  intervalType: string,
+  leadValue: number,
+  leadUnit: string
+): boolean {
+  const last = midnight(lastPerformed);
+  const due = midnight(addInterval(last, intervalValue, intervalType));
+  const windowStart = midnight(subtractInterval(due, leadValue, leadUnit));
+  return windowStart.getTime() <= last.getTime();
+}
+
+export function scheduledDueDate(
+  lastPerformed: Date,
+  intervalValue: number,
+  intervalType: string
+): Date {
+  return midnight(addInterval(midnight(lastPerformed), intervalValue, intervalType));
 }

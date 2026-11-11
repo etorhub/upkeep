@@ -8,12 +8,14 @@
         "data": {
           "admin_only": "Administrateurs uniquement",
           "sidebar_title": "Titre de la barre latérale",
-          "sidebar_icon": "Icône de la barre latérale"
+          "sidebar_icon": "Icône de la barre latérale",
+          "notify_time": "Heure des notifications"
         },
         "data_description": {
           "admin_only": "Lorsque cette option est activée, seuls les administrateurs voient Upkeep dans la barre latérale. Désactivez-la pour l'afficher à tous les utilisateurs.",
           "sidebar_title": "Nom affiché dans la barre latérale gauche.",
-          "sidebar_icon": "Icône MDI de l'élément de la barre latérale (par exemple mdi:hammer-wrench)."
+          "sidebar_icon": "Icône MDI de l'élément de la barre latérale (par exemple mdi:hammer-wrench).",
+          "notify_time": "Heure locale à laquelle les avis d'échéance proche et d'échéance sont envoyés."
         }
       }
     },
@@ -28,12 +30,14 @@
         "data": {
           "admin_only": "Administrateurs uniquement",
           "sidebar_title": "Titre de la barre latérale",
-          "sidebar_icon": "Icône de la barre latérale"
+          "sidebar_icon": "Icône de la barre latérale",
+          "notify_time": "Heure des notifications"
         },
         "data_description": {
           "admin_only": "Lorsque cette option est activée, seuls les administrateurs voient Upkeep dans la barre latérale. Désactivez-la pour l'afficher à tous les utilisateurs.",
           "sidebar_title": "Nom affiché dans la barre latérale gauche.",
-          "sidebar_icon": "Icône MDI de l'élément de la barre latérale (par exemple mdi:hammer-wrench)."
+          "sidebar_icon": "Icône MDI de l'élément de la barre latérale (par exemple mdi:hammer-wrench).",
+          "notify_time": "Heure locale à laquelle les avis d'échéance proche et d'échéance sont envoyés."
         }
       }
     }

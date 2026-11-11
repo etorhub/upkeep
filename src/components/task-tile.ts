@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult, CSSResultGroup, nothing } from 'lit';
+import { LitElement, html, css, svg, TemplateResult, CSSResultGroup, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { TaskData } from '../types';
@@ -56,52 +56,144 @@ export class TaskTile extends LitElement {
     return this._renderGrid(color, daysText, isOverdue);
   }
 
+  private _localeTag(): string {
+    return (this.hass?.locale?.language ?? this.hass?.language ?? 'en').replaceAll('_', '-');
+  }
+
+  private _dueLabel(withWeekday: boolean): string | null {
+    const { task } = this;
+    if (task.task_type === 'frequency' || !task.next_due || task.next_due.getTime() === 0) {
+      return null;
+    }
+    const date = new Intl.DateTimeFormat(this._localeTag(), {
+      ...(withWeekday ? { weekday: 'short' as const } : {}),
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(task.next_due);
+    const locale = this.hass?.locale?.language ?? this.hass?.language;
+    return withWeekday ? localize('panel.due_on', { date }, locale) : date;
+  }
+
+  private _shownProgress(): number {
+    return Math.max(2, Math.min(100, this.task.progress));
+  }
+
+  private _renderRing(color: string): TemplateResult {
+    const size = 56;
+    const stroke = 3;
+    const radius = (size - stroke) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const dash = (this._shownProgress() / 100) * circumference;
+    const center = size / 2;
+    return svg`
+      <svg
+        class="ring-svg"
+        width="${size}"
+        height="${size}"
+        viewBox="0 0 ${size} ${size}"
+        aria-hidden="true"
+      >
+        <circle
+          cx="${center}"
+          cy="${center}"
+          r="${radius}"
+          fill="none"
+          stroke="var(--divider-color, #363636)"
+          stroke-width="${stroke}"
+        ></circle>
+        <circle
+          cx="${center}"
+          cy="${center}"
+          r="${radius}"
+          fill="none"
+          stroke="${color}"
+          stroke-width="${stroke}"
+          stroke-linecap="round"
+          stroke-dasharray="${dash} ${circumference - dash}"
+          transform="rotate(-90 ${center} ${center})"
+        ></circle>
+      </svg>
+    `;
+  }
+
+  private _renderMeter(color: string): TemplateResult {
+    return html`
+      <span class="meter" aria-hidden="true">
+        <span
+          class="meter-fill"
+          style="inline-size:${this._shownProgress()}%;background:${color}"
+        ></span>
+      </span>
+    `;
+  }
+
   private _renderGrid(color: string, daysText: string, isOverdue: boolean): TemplateResult {
     const { task } = this;
+    const dueLong = this._dueLabel(true);
+    const dueShort = this._dueLabel(false);
+    const useRing = this.progressType !== 'bar';
     return html`
-      <div class="tile grid ${isOverdue ? 'overdue' : ''} ${this._done ? 'done-anim' : ''}">
-        <div class="tile-top" @click=${this._showMoreInfo}>
-          <div class="icon-wrap" style="color: ${color}">
-            <ha-icon .icon=${task.icon}></ha-icon>
-          </div>
-          ${this._renderProgress(color)}
-        </div>
-        <div class="tile-body" @click=${this._showMoreInfo}>
-          <div class="name">${task.name}</div>
-          <div class="due" style="color: ${color}">${daysText}</div>
-        </div>
-        <div class="tile-actions">${this._renderDoneButton()}</div>
-      </div>
+      <article class="tile grid ${isOverdue ? 'overdue' : ''} ${this._done ? 'done-anim' : ''}">
+        <button type="button" class="tile-open" @click=${this._showMoreInfo}>
+          ${useRing
+            ? html`
+                <span class="ring">
+                  ${this._renderRing(color)}
+                  <span
+                    class="icon-bubble"
+                    style="color:${color};background:color-mix(in srgb, ${color} 14%, transparent)"
+                  >
+                    <ha-icon .icon=${task.icon} aria-hidden="true"></ha-icon>
+                  </span>
+                </span>
+              `
+            : html`
+                <span
+                  class="icon-tile"
+                  style="color:${color};background:color-mix(in srgb, ${color} 14%, transparent)"
+                >
+                  <ha-icon .icon=${task.icon} aria-hidden="true"></ha-icon>
+                </span>
+              `}
+          <span class="copy">
+            <span class="name">${task.name}</span>
+            <span class="remaining" style="color:${color}">${daysText}</span>
+            ${dueLong ? html`<span class="due due-long">${dueLong}</span>` : nothing}
+            ${dueShort ? html`<span class="due due-short">${dueShort}</span>` : nothing}
+            ${useRing ? nothing : this._renderMeter(color)}
+          </span>
+        </button>
+        <footer class="tile-actions">${this._renderDoneButton()}</footer>
+      </article>
     `;
   }
 
   private _renderList(color: string, daysText: string, isOverdue: boolean): TemplateResult {
     const { task } = this;
-    const isBarProgress = this.progressType === 'bar';
+    const dueLong = this._dueLabel(true);
+    const dueShort = this._dueLabel(false);
     return html`
-      <div
-        class="tile list ${isBarProgress ? 'list-bar' : ''} ${isOverdue ? 'overdue' : ''} ${this
-          ._done
-          ? 'done-anim'
-          : ''}"
-      >
-        <div class="list-row">
-          <div class="icon-wrap list-icon" style="color: ${color}" @click=${this._showMoreInfo}>
-            <ha-icon .icon=${task.icon}></ha-icon>
-          </div>
-          <div class="list-info" @click=${this._showMoreInfo}>
-            <div class="name">${task.name}</div>
-            <div class="due" style="color: ${color}">${daysText}</div>
-          </div>
-          ${!isBarProgress
-            ? html`<div class="list-progress">${this._renderProgress(color)}</div>`
-            : nothing}
-          <div class="list-action">${this._renderDoneButton()}</div>
-        </div>
-        ${isBarProgress
-          ? html`<div class="list-bar-footer">${this._renderProgress(color)}</div>`
-          : nothing}
-      </div>
+      <article class="tile list ${isOverdue ? 'overdue' : ''} ${this._done ? 'done-anim' : ''}">
+        <button type="button" class="tile-open" @click=${this._showMoreInfo}>
+          <span
+            class="icon-tile"
+            style="color:${color};background:color-mix(in srgb, ${color} 14%, transparent)"
+          >
+            <ha-icon .icon=${task.icon} aria-hidden="true"></ha-icon>
+          </span>
+          <span class="copy">
+            <span class="name">${task.name}</span>
+            <span class="meta">
+              <span class="remaining" style="color:${color}">${daysText}</span>
+              ${dueLong ? html`<span class="due due-long"> · ${dueLong}</span>` : nothing}
+              ${dueShort ? html`<span class="due due-short"> · ${dueShort}</span>` : nothing}
+            </span>
+            ${this._renderMeter(color)}
+          </span>
+        </button>
+        <footer class="tile-actions">${this._renderDoneButton()}</footer>
+      </article>
     `;
   }
 
@@ -143,6 +235,9 @@ export class TaskTile extends LitElement {
   }
 
   private _renderDoneButton(): TemplateResult {
+    const locale = this.hass?.locale?.language ?? this.hass?.language;
+    const label = localize('card.mark_done', undefined, locale);
+    const named = `${label}: ${this.task.name}`;
     if (this._done) {
       return html`
         <div class="done-check">
@@ -154,19 +249,38 @@ export class TaskTile extends LitElement {
     if (this._confirming) {
       return html`
         <div class="confirm-row">
-          <button class="btn btn-confirm" @click=${this._handleDone}>
+          <button
+            type="button"
+            class="btn btn-confirm"
+            aria-label=${named}
+            @click=${this._handleDone}
+          >
             <ha-icon icon="mdi:check"></ha-icon>
           </button>
-          <button class="btn btn-cancel" @click=${this._cancelConfirm}>
+          <button
+            type="button"
+            class="btn btn-cancel"
+            aria-label=${localize('panel.cancel', undefined, locale)}
+            @click=${this._cancelConfirm}
+          >
             <ha-icon icon="mdi:close"></ha-icon>
           </button>
         </div>
       `;
     }
 
+    const urgent = this.task.urgency === 'overdue' || this.task.urgency === 'due_soon';
     return html`
-      <button class="btn btn-done" @click=${this._handleDone}>
-        ${localize('card.mark_done', undefined, this.hass?.locale?.language ?? this.hass?.language)}
+      <button
+        type="button"
+        class="btn btn-done ${urgent ? 'urgent' : ''}"
+        aria-label=${named}
+        @click=${this._handleDone}
+      >
+        <span class="check-face" aria-hidden="true">
+          <ha-icon icon="mdi:check"></ha-icon>
+        </span>
+        <span class="btn-label">${label}</span>
       </button>
     `;
   }
@@ -174,88 +288,156 @@ export class TaskTile extends LitElement {
   static get styles(): CSSResultGroup {
     return css`
       :host {
-        display: block;
-      }
-
-      /* Grid tile */
-      .tile.grid {
-        background: var(--card-background-color, var(--ha-card-background, #fff));
-        border-radius: 12px;
-        padding: 16px;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        transition:
-          box-shadow 0.2s ease,
-          transform 0.2s ease,
-          border-color 0.2s ease;
-        position: relative;
-        overflow: hidden;
+        container: tile / inline-size;
       }
-      .tile.grid:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transform: translateY(-2px);
+
+      .tile.grid,
+      .tile.list {
+        color: var(--primary-text-color);
       }
-      .tile-top {
+      .tile-open {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: start;
+        cursor: pointer;
+      }
+      .tile-open:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 3px;
+      }
+      .copy {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-inline-size: 0;
+      }
+      .tile.grid .name,
+      .tile.list .name {
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 1.3;
+        color: var(--primary-text-color);
+      }
+      .remaining {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .due {
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--secondary-text-color);
+        text-wrap: pretty;
+      }
+      .due-short {
+        display: none;
+      }
+      .icon-tile,
+      .icon-bubble {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px;
-        cursor: pointer;
-        width: 100%;
-      }
-      .tile-body {
-        text-align: center;
-        cursor: pointer;
-        width: 100%;
-      }
-      .tile-actions {
-        margin-top: 4px;
-      }
-
-      /* List tile */
-      .tile.list {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        padding: 0;
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
-        transition: background 0.15s ease;
-      }
-      .tile.list:hover {
-        background: var(--secondary-background-color);
-      }
-      .tile.list .list-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 16px;
-      }
-      .tile.list.list-bar .list-row {
-        padding-bottom: 8px;
-      }
-      .tile.list .list-bar-footer {
-        padding: 0 16px 12px 16px;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      .tile.list .list-bar-footer .bar-wrap {
-        padding: 0;
-      }
-      .tile.list .list-bar-footer .bar-track {
-        height: 8px;
-      }
-      .list-info {
-        flex: 1;
-        min-width: 0;
-        cursor: pointer;
-      }
-      .list-progress {
         flex-shrink: 0;
       }
-      .list-action {
+      .icon-tile {
+        inline-size: 44px;
+        block-size: 44px;
+        border-radius: 12px;
+      }
+      .icon-tile ha-icon {
+        --mdc-icon-size: 24px;
+      }
+      .ring {
+        position: relative;
+        inline-size: 56px;
+        block-size: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .ring-svg {
+        position: absolute;
+        inset: 0;
+      }
+      .icon-bubble {
+        inline-size: 42px;
+        block-size: 42px;
+        border-radius: 21px;
+      }
+      .icon-bubble ha-icon {
+        --mdc-icon-size: 22px;
+      }
+      .meter {
+        display: block;
+        block-size: 4px;
+        border-radius: 2px;
+        background: var(--divider-color, #363636);
+        overflow: clip;
+      }
+      .meter-fill {
+        display: block;
+        block-size: 100%;
+        border-radius: 2px;
+      }
+
+      .tile.grid {
+        box-sizing: border-box;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+        border: 1px solid var(--divider-color, #343434);
+        border-radius: 16px;
+        background: var(--card-background-color, var(--ha-card-background, #232323));
+      }
+      .tile.grid .tile-open {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+      .tile.grid .name {
+        text-wrap: balance;
+      }
+      .tile.grid .tile-actions {
+        margin-block-start: auto;
+      }
+
+      .tile.list {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 16px 12px 20px;
+        border-block-start: 1px solid var(--divider-color, #2e2e2e);
+      }
+      .tile.list .tile-open {
+        flex: 1;
+        min-inline-size: 0;
+        min-block-size: 56px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+      }
+      .tile.list .copy {
+        flex: 1;
+        gap: 5px;
+      }
+      .tile.list .name,
+      .tile.list .meta {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .tile.list .tile-actions {
         flex-shrink: 0;
       }
 
@@ -298,91 +480,123 @@ export class TaskTile extends LitElement {
         cursor: pointer;
       }
 
-      /* Text */
-      .name {
-        font-weight: 500;
-        font-size: 14px;
-        color: var(--primary-text-color);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .due {
-        font-size: 12px;
-        margin-top: 2px;
-        font-weight: 500;
-      }
-
-      /* Progress bar variant */
-      .bar-wrap {
-        width: 100%;
-        padding: 0 4px;
-      }
-      .bar-track {
-        background: var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        height: 6px;
-        width: 100%;
-        overflow: hidden;
-      }
-      .bar-fill {
-        height: 100%;
-        border-radius: 4px;
-        transition:
-          width 0.6s ease,
-          background 0.3s ease;
-      }
-
-      /* Buttons */
       .btn {
-        border: none;
-        border-radius: 8px;
-        padding: 6px 14px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        transition: all 0.15s ease;
+        justify-content: center;
+        gap: 8px;
+        min-block-size: 44px;
+        padding: 0 16px;
+        border: 1px solid var(--divider-color, #444);
+        border-radius: 12px;
+        background: transparent;
+        color: var(--primary-text-color);
+        font: inherit;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
       }
-      .btn-done {
-        background: var(--primary-color);
-        color: var(--text-primary-color, #fff);
+      .btn:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
-      .btn-done:hover {
-        filter: brightness(1.1);
-        transform: scale(1.03);
+      .tile.grid .btn-done,
+      .tile.grid .confirm-row {
+        inline-size: 100%;
+      }
+      .check-face {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .check-face ha-icon,
+      .btn-confirm ha-icon,
+      .btn-cancel ha-icon {
+        --mdc-icon-size: 18px;
       }
       .btn-confirm {
         background: var(--success-color, #4caf50);
-        color: #fff;
+        border-color: transparent;
+        color: #102027;
       }
       .btn-cancel {
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-      }
-      .btn-confirm ha-icon,
-      .btn-cancel ha-icon {
-        --mdc-icon-size: 16px;
+        background: transparent;
       }
       .confirm-row {
         display: flex;
-        gap: 6px;
+        gap: 8px;
+      }
+      .tile.grid .confirm-row .btn {
+        flex: 1;
       }
       .done-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-inline-size: 44px;
+        min-block-size: 44px;
         animation: popIn 0.3s ease;
       }
       .done-check ha-icon {
         --mdc-icon-size: 28px;
       }
 
-      /* Overdue pulse */
-      .tile.overdue {
-        border-color: var(--error-color, #f44336);
+      @container tile (inline-size < 230px) {
+        .ring,
+        .ring-svg {
+          inline-size: 48px;
+          block-size: 48px;
+        }
+        .icon-bubble {
+          inline-size: 36px;
+          block-size: 36px;
+        }
+        .icon-bubble ha-icon {
+          --mdc-icon-size: 20px;
+        }
+        .tile.grid {
+          gap: 14px;
+          padding: 14px;
+        }
+        .tile.grid .due-long {
+          display: none;
+        }
+        .tile.grid .due-short {
+          display: block;
+        }
       }
-      .tile.overdue.grid {
-        animation: overduePulse 2s ease-in-out infinite;
+      @container tile (inline-size < 440px) {
+        .tile.list {
+          gap: 4px;
+          padding: 10px 8px 10px 16px;
+        }
+        .tile.list .due-long {
+          display: none;
+        }
+        .tile.list .due-short {
+          display: inline;
+        }
+        .tile.list .btn-done {
+          inline-size: 44px;
+          padding: 0;
+          border: 0;
+          background: transparent;
+        }
+        .tile.list .btn-done .btn-label {
+          display: none;
+        }
+        .tile.list .btn-done .check-face {
+          box-sizing: border-box;
+          inline-size: 34px;
+          block-size: 34px;
+          border: 1.5px solid var(--divider-color, #555);
+          border-radius: 17px;
+        }
+        .tile.list .btn-done.urgent .check-face {
+          background: var(--primary-color);
+          border-color: transparent;
+          color: #102027;
+        }
       }
 
       /* Done animation */
@@ -390,15 +604,6 @@ export class TaskTile extends LitElement {
         animation: donePop 0.4s ease;
       }
 
-      @keyframes overduePulse {
-        0%,
-        100% {
-          box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
-        }
-        50% {
-          box-shadow: 0 0 12px 2px rgba(244, 67, 54, 0.2);
-        }
-      }
       @keyframes popIn {
         0% {
           transform: scale(0);

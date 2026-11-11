@@ -36,10 +36,10 @@ jobs:
         run: npm run check:i18n
 
       - name: Test
-        run: npm run test
-
-      - name: Python path tests
-        run: python3 -m unittest discover -s tests -p 'test_*.py'
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install -r requirements_test.txt
+          PATH="$PWD/.venv/bin:$PATH" npm run test
 
       - name: Build
         run: npm run build

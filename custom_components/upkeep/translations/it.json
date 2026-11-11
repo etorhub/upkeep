@@ -8,12 +8,14 @@
         "data": {
           "admin_only": "Solo amministratori",
           "sidebar_title": "Titolo della barra laterale",
-          "sidebar_icon": "Icona della barra laterale"
+          "sidebar_icon": "Icona della barra laterale",
+          "notify_time": "Ora delle notifiche"
         },
         "data_description": {
           "admin_only": "Se attivo, solo gli amministratori vedono Upkeep nella barra laterale. Disattivalo per mostrarlo a tutti gli utenti.",
           "sidebar_title": "Nome mostrato nella barra laterale sinistra.",
-          "sidebar_icon": "Icona MDI della voce nella barra laterale (per esempio mdi:hammer-wrench)."
+          "sidebar_icon": "Icona MDI della voce nella barra laterale (per esempio mdi:hammer-wrench).",
+          "notify_time": "Ora locale in cui vengono inviati gli avvisi di scadenza imminente e di scadenza."
         }
       }
     },
@@ -28,12 +30,14 @@
         "data": {
           "admin_only": "Solo amministratori",
           "sidebar_title": "Titolo della barra laterale",
-          "sidebar_icon": "Icona della barra laterale"
+          "sidebar_icon": "Icona della barra laterale",
+          "notify_time": "Ora delle notifiche"
         },
         "data_description": {
           "admin_only": "Se attivo, solo gli amministratori vedono Upkeep nella barra laterale. Disattivalo per mostrarlo a tutti gli utenti.",
           "sidebar_title": "Nome mostrato nella barra laterale sinistra.",
-          "sidebar_icon": "Icona MDI della voce nella barra laterale (per esempio mdi:hammer-wrench)."
+          "sidebar_icon": "Icona MDI della voce nella barra laterale (per esempio mdi:hammer-wrench).",
+          "notify_time": "Ora locale in cui vengono inviati gli avvisi di scadenza imminente e di scadenza."
         }
       }
     }

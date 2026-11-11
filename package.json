@@ -87,7 +87,7 @@
     "typecheck": "tsc --noEmit",
     "check:i18n": "node scripts/check-translations.mjs",
     "test": "vitest run && npm run test:paths",
-    "test:paths": "python3 -m unittest discover -s tests -p 'test_*.py'",
+    "test:paths": "python3 -m pytest tests",
     "test:watch": "vitest"
   }
 }

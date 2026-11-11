@@ -8,12 +8,14 @@
         "data": {
           "admin_only": "Apenas administradores",
           "sidebar_title": "Título da barra lateral",
-          "sidebar_icon": "Ícone da barra lateral"
+          "sidebar_icon": "Ícone da barra lateral",
+          "notify_time": "Hora das notificações"
         },
         "data_description": {
           "admin_only": "Quando está ativo, apenas os administradores veem o Upkeep na barra lateral. Desative para o mostrar a todos os utilizadores.",
           "sidebar_title": "Nome apresentado na barra lateral esquerda.",
-          "sidebar_icon": "Ícone MDI do item da barra lateral (por exemplo, mdi:hammer-wrench)."
+          "sidebar_icon": "Ícone MDI do item da barra lateral (por exemplo, mdi:hammer-wrench).",
+          "notify_time": "Hora local em que os avisos de proximidade e de vencimento são enviados."
         }
       }
     },
@@ -28,12 +30,14 @@
         "data": {
           "admin_only": "Apenas administradores",
           "sidebar_title": "Título da barra lateral",
-          "sidebar_icon": "Ícone da barra lateral"
+          "sidebar_icon": "Ícone da barra lateral",
+          "notify_time": "Hora das notificações"
         },
         "data_description": {
           "admin_only": "Quando está ativo, apenas os administradores veem o Upkeep na barra lateral. Desative para o mostrar a todos os utilizadores.",
           "sidebar_title": "Nome apresentado na barra lateral esquerda.",
-          "sidebar_icon": "Ícone MDI do item da barra lateral (por exemplo, mdi:hammer-wrench)."
+          "sidebar_icon": "Ícone MDI do item da barra lateral (por exemplo, mdi:hammer-wrench).",
+          "notify_time": "Hora local em que os avisos de proximidade e de vencimento são enviados."
         }
       }
     }

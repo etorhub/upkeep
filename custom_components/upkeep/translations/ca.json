@@ -8,12 +8,14 @@
         "data": {
           "admin_only": "Només administradors",
           "sidebar_title": "Títol de la barra lateral",
-          "sidebar_icon": "Icona de la barra lateral"
+          "sidebar_icon": "Icona de la barra lateral",
+          "notify_time": "Hora de les notificacions"
         },
         "data_description": {
           "admin_only": "Si està activat, només els administradors veuen Upkeep a la barra lateral. Desactiva-ho per mostrar-lo a tots els usuaris.",
           "sidebar_title": "Nom que es mostra a la barra lateral esquerra.",
-          "sidebar_icon": "Icona MDI de l'element de la barra lateral (per exemple, mdi:hammer-wrench)."
+          "sidebar_icon": "Icona MDI de l'element de la barra lateral (per exemple, mdi:hammer-wrench).",
+          "notify_time": "Hora local en què s'envien els avisos de proximitat i de venciment."
         }
       }
     },
@@ -28,12 +30,14 @@
         "data": {
           "admin_only": "Només administradors",
           "sidebar_title": "Títol de la barra lateral",
-          "sidebar_icon": "Icona de la barra lateral"
+          "sidebar_icon": "Icona de la barra lateral",
+          "notify_time": "Hora de les notificacions"
         },
         "data_description": {
           "admin_only": "Si està activat, només els administradors veuen Upkeep a la barra lateral. Desactiva-ho per mostrar-lo a tots els usuaris.",
           "sidebar_title": "Nom que es mostra a la barra lateral esquerra.",
-          "sidebar_icon": "Icona MDI de l'element de la barra lateral (per exemple, mdi:hammer-wrench)."
+          "sidebar_icon": "Icona MDI de l'element de la barra lateral (per exemple, mdi:hammer-wrench).",
+          "notify_time": "Hora local en què s'envien els avisos de proximitat i de venciment."
         }
       }
     }
