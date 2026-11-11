@@ -8,13 +8,13 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from . import const
+from .meters import evaluate
 from .notices import (
-    evaluate_frequency_notice,
-    evaluate_time_notice,
+    evaluate_notice,
     is_at_or_after_notify_time,
+    notice_catalog,
     notice_message,
     parse_notify_clock,
-    time_task_is_due,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class UpkeepCoordinator(DataUpdateCoordinator[None]):
             task = entity.task
             if not task.get("enabled", True):
                 continue
-            if _task_is_due(task, today):
+            if _task_is_due(task, now, self.hass.config.time_zone):
                 currently_due.add(task_id)
 
         # Fire events for tasks that newly became due. This stays independent
@@ -91,17 +91,17 @@ class UpkeepCoordinator(DataUpdateCoordinator[None]):
     def _fire_task_due_event(self, task_id: str, task_data: dict, entity) -> None:
         """Fire upkeep_task_due when a task transitions to due."""
         entity_id = entity.entity_id if entity else None
-        urgency = "overdue"
-        if entity and hasattr(entity, "_attr_extra_state_attributes"):
-            urgency = entity._attr_extra_state_attributes.get("urgency", "overdue")
-
+        zone = self.hass.config.time_zone or "UTC"
+        result = evaluate(task_data, dt_util.now(), zone, 7)
         self.hass.bus.async_fire(
             const.EVENT_TASK_DUE,
             {
                 "task_id": task_id,
                 "title": task_data.get("title", ""),
-                "urgency": urgency,
+                "urgency": result.urgency,
                 "entity_id": entity_id,
+                "trigger_type": (task_data.get("trigger") or {}).get("type"),
+                "progress": result.progress,
             },
         )
 
@@ -116,54 +116,50 @@ class UpkeepCoordinator(DataUpdateCoordinator[None]):
             if not task.get("enabled", True):
                 continue
 
-            if task.get("task_type") == const.TASK_TYPE_FREQUENCY:
-                decision = evaluate_frequency_notice(
-                    current_count=task.get("current_count", 0),
-                    frequency_target=task.get("frequency_target") or 1,
-                    notify_when_due=bool(task.get("notify_when_due")),
-                    notified_frequency_due=bool(task.get("notified_frequency_due")),
-                )
-                if decision.rearm:
-                    store.update_task(task_id, {"notified_frequency_due": False})
-                if at_time and decision.send_due:
-                    sent = await self._async_deliver(task_id, task, "due", 0)
-                    if sent:
-                        store.update_task(task_id, {"notified_frequency_due": True})
+            result = evaluate(task, dt_util.now(), self.hass.config.time_zone or "UTC", 7)
+            if result.urgency == "unknown" or result.urgency == "snoozed":
                 continue
-
+            decision = evaluate_notice(
+                is_due=result.is_due,
+                urgency=result.urgency,
+                cycle_key=result.cycle_key,
+                rule_key=result.rule.key,
+                notify_when_due=bool(task.get("notify_when_due")),
+                notify_before=bool(task.get("notify_before")),
+                notified_cycle_key=task.get("notified_cycle_key"),
+                notified_kinds=task.get("notified_kinds"),
+            )
             if not at_time:
                 continue
-
-            decision = evaluate_time_notice(
-                today=today,
-                last_performed=_local_date(task.get("last_performed")),
-                interval_value=task.get("interval_value", 30),
-                interval_type=task.get("interval_type", "days"),
-                notify_before=bool(task.get("notify_before")),
-                notify_before_value=task.get("notify_before_value") or 7,
-                notify_before_unit=task.get("notify_before_unit") or "days",
-                notify_when_due=bool(task.get("notify_when_due")),
-                notified_before_due=task.get("notified_before_due"),
-                notified_due_on=task.get("notified_due_on"),
-            )
-            if decision.send_due:
-                sent = await self._async_deliver(task_id, task, "due", decision.days_remaining)
-                if sent and decision.due_key:
-                    store.update_task(task_id, {"notified_due_on": decision.due_key})
-            elif decision.send_before:
-                sent = await self._async_deliver(
-                    task_id, task, "before", decision.days_remaining
+            if decision.send_due or decision.send_before:
+                kind = "due" if decision.send_due else "before"
+                sent = await self._async_deliver(task_id, task, kind, 0)
+                if sent:
+                    store.update_task(
+                        task_id,
+                        {
+                            "notified_cycle_key": decision.cycle_key,
+                            "notified_kinds": [kind],
+                        },
+                    )
+            elif decision.rearm:
+                store.update_task(
+                    task_id,
+                    {"notified_cycle_key": decision.cycle_key, "notified_kinds": []},
                 )
-                if sent and decision.due_key:
-                    store.update_task(task_id, {"notified_before_due": decision.due_key})
 
     async def _async_deliver(self, task_id: str, task: dict, kind: str, days_remaining: int) -> bool:
         """Send one notice. A failure is not recorded, so the next poll retries."""
         service = task.get("notify_service") or "persistent_notification"
         if isinstance(service, str) and service.startswith("notify."):
             service = service[len("notify.") :]
+        catalog = notice_catalog(getattr(self.hass.config, "language", None))
         title = task.get("title", "")
-        message = notice_message(title, kind=kind, days_remaining=days_remaining)
+        message = catalog.get(kind, notice_message(title, kind=kind))
+        if "{title}" in message:
+            message = message.format(title=title)
+        else:
+            message = notice_message(title, kind=kind)
         failure_key = f"{task_id}:{service}"
         try:
             if service == "persistent_notification":
@@ -171,7 +167,7 @@ class UpkeepCoordinator(DataUpdateCoordinator[None]):
                     "persistent_notification",
                     "create",
                     {
-                        "title": "Upkeep",
+                        "title": catalog.get("title", "Upkeep"),
                         "message": message,
                         "notification_id": f"upkeep_{kind}_{task_id}",
                     },
@@ -183,7 +179,7 @@ class UpkeepCoordinator(DataUpdateCoordinator[None]):
                 await self.hass.services.async_call(
                     "notify",
                     service,
-                    {"title": "Upkeep", "message": message},
+                    {"title": catalog.get("title", "Upkeep"), "message": message},
                     blocking=True,
                 )
         except Exception as err:
@@ -215,29 +211,8 @@ class UpkeepCoordinator(DataUpdateCoordinator[None]):
         return str(raw)
 
 
-def _local_date(value: str | None) -> date | None:
-    """Parse a stored timestamp into a local calendar date."""
-    if not value:
-        return None
-    parsed = dt_util.parse_datetime(value)
-    if parsed is None and len(value) >= 10:
-        parsed = dt_util.parse_datetime(value[:10] + "T00:00:00")
-    if parsed is None:
-        return None
-    return dt_util.as_local(parsed).date()
-
-
-def _task_is_due(task: dict, today: date) -> bool:
+def _task_is_due(task: dict, now, time_zone: str) -> bool:
     """Return whether a task counts as due for the bus event."""
-    if task.get("task_type") == const.TASK_TYPE_FREQUENCY:
-        target = task.get("frequency_target") or 1
-        return task.get("current_count", 0) >= target
-    last = _local_date(task.get("last_performed"))
-    if task.get("last_performed") and last is None:
-        return True
-    return time_task_is_due(
-        today=today,
-        last_performed=last,
-        interval_value=task.get("interval_value", 30),
-        interval_type=task.get("interval_type", "days"),
-    )
+    if not task.get("enabled", True) or not task.get("trigger"):
+        return False
+    return evaluate(task, now, time_zone or "UTC", 7).is_due

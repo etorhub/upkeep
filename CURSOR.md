@@ -38,7 +38,7 @@ src/
 - **Lit decorators:** Use `@customElement`, `@property`, `@state`; prefer reactive patterns
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `docs:`, etc.) — use `npm run commit`
 - **Pre-commit:** Runs lint, typecheck, test, format check, build; stages `dist/`
-- **Localization:** Card, editor, and panel strings via `localize('key.path', vars?, language)` from `src/localize/`. Integration strings are in `custom_components/upkeep/translations/` for en, es, ca, fr, de, it, nl, and pt. `npm run check:i18n` keeps both catalogs complete.
+- **Localization:** Card, editor, and panel strings use `localize('key.path', vars?, language)` from `src/localize/languages/`. Home Assistant config-flow and service strings live in `custom_components/upkeep/translations/` and may use only official hassfest roots (`config`, `options`, `services`, and the other keys hassfest accepts). Persistent notifications and other integration-only copy live in `custom_components/upkeep/strings/`, loaded by `notice_catalog`. All three catalogs cover en, es, ca, fr, de, it, nl, and pt. `npm run check:i18n` requires matching keys and rejects any other root in `translations/`.
 
 ## Key Types
 

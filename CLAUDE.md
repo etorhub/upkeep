@@ -38,7 +38,7 @@ src/
 1. **Entity discovery:** `discoverEntities(hass, entities?, exclude_entities?)` — auto-finds `binary_sensor.*` with Upkeep attributes, or uses manual list
 2. **Task data:** `buildTaskData(stateObj, dueSoonDays)` — computes progress, days_remaining, urgency
 3. **Urgency:** `on_track` | `due_soon` | `overdue` — based on progress and `due_soon_days`
-4. **Localization:** Card, editor, and panel strings via `localize('editor.title', vars?, language)`. Backend strings live in `custom_components/upkeep/translations/` for en, es, ca, fr, de, it, nl, and pt. `npm run check:i18n` requires every catalog to match English.
+4. **Localization:** Card, editor, and panel strings use `localize('editor.title', vars?, language)` from `src/localize/languages/`. Home Assistant config-flow and service strings live in `custom_components/upkeep/translations/` and may use only official hassfest roots (`config`, `options`, `services`, and the other keys hassfest accepts). Persistent notifications and other integration-only copy live in `custom_components/upkeep/strings/`, loaded by `notice_catalog`. All three catalogs cover en, es, ca, fr, de, it, nl, and pt. `npm run check:i18n` requires matching keys and rejects any other root in `translations/`.
 
 ## Configuration Options
 

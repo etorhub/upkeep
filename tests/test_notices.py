@@ -15,6 +15,7 @@ sys.modules[_SPEC.name] = _NOTICES
 _SPEC.loader.exec_module(_NOTICES)
 
 evaluate_frequency_notice = _NOTICES.evaluate_frequency_notice
+evaluate_notice = _NOTICES.evaluate_notice
 evaluate_time_notice = _NOTICES.evaluate_time_notice
 is_at_or_after_notify_time = _NOTICES.is_at_or_after_notify_time
 
@@ -116,3 +117,54 @@ def test_frequency_due_notice_is_once_until_the_count_drops():
     assert already_sent.send_due is False
     assert reset.send_due is False
     assert reset.rearm is True
+
+
+def test_meter_notice_sends_due_soon_once_per_cycle_and_skips_latches():
+    coming = evaluate_notice(
+        is_due=False,
+        urgency="due_soon",
+        cycle_key="2026-07-01",
+        rule_key="rule.interval",
+        notify_when_due=True,
+        notify_before=True,
+        notified_cycle_key=None,
+        notified_kinds=[],
+    )
+    again = evaluate_notice(
+        is_due=False,
+        urgency="due_soon",
+        cycle_key="2026-07-01",
+        rule_key="rule.interval",
+        notify_when_due=True,
+        notify_before=True,
+        notified_cycle_key="2026-07-01",
+        notified_kinds=["before"],
+    )
+    latch = evaluate_notice(
+        is_due=True,
+        urgency="overdue",
+        cycle_key="gen-0",
+        rule_key="rule.event_state",
+        notify_when_due=True,
+        notify_before=True,
+        notified_cycle_key=None,
+        notified_kinds=[],
+    )
+    unknown = evaluate_notice(
+        is_due=False,
+        urgency="unknown",
+        cycle_key="gen-0",
+        rule_key="rule.device_life",
+        notify_when_due=True,
+        notify_before=True,
+        notified_cycle_key=None,
+        notified_kinds=[],
+    )
+
+    assert coming.send_before is True
+    assert coming.send_due is False
+    assert again.send_before is False
+    assert latch.send_due is True
+    assert latch.send_before is False
+    assert unknown.send_due is False
+    assert unknown.send_before is False

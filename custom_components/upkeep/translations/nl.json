@@ -45,7 +45,7 @@
   "services": {
     "reset_last_performed": {
       "name": "Laatste uitvoering resetten",
-      "description": "Reset de datum van de laatste uitvoering van een onderhoudstaak. Alias van complete_task voor achterwaartse compatibiliteit.",
+      "description": "Alias van Taak afronden. De datum geldt voor intervallen en de kalender.",
       "fields": {
         "entity_id": {
           "name": "Entiteits-ID",
@@ -53,13 +53,13 @@
         },
         "performed_date": {
           "name": "Uitvoerdatum",
-          "description": "Geef optioneel de datum van de laatste uitvoering op."
+          "description": "Datum waarop de taak is gedaan. Gebruikt door intervallen en de kalender."
         }
       }
     },
     "complete_task": {
       "name": "Taak voltooien",
-      "description": "Markeer een onderhoudstaak als voltooid (reset de datum van de laatste uitvoering).",
+      "description": "Markeer een taak als klaar. Wat wordt gereset hangt af van de trigger. De datum geldt voor intervallen en de kalender.",
       "fields": {
         "entity_id": {
           "name": "Entiteits-ID",
@@ -67,7 +67,7 @@
         },
         "performed_date": {
           "name": "Uitvoerdatum",
-          "description": "Geef optioneel de datum van de laatste uitvoering op."
+          "description": "Datum waarop de taak is gedaan. Gebruikt door intervallen en de kalender."
         }
       }
     },
@@ -101,7 +101,7 @@
     },
     "increment_counter": {
       "name": "Teller verhogen",
-      "description": "Verhoog de gebruiksteller van een taak op basis van frequentie (bijvoorbeeld vaatwasserrondes).",
+      "description": "Telt één op bij een cyclusteller. Andere triggers negeren dit.",
       "fields": {
         "entity_id": {
           "name": "Entiteits-ID",

@@ -14,6 +14,8 @@ export interface Task {
   icon?: string;
   tag_id?: string;
   enabled: boolean;
+  trigger?: { type?: string; every?: number; unit?: string; target?: number };
+  state?: { last_performed?: string; count?: number };
   snoozed_until?: string;
   notify_when_due?: boolean;
   notify_before?: boolean;

@@ -45,7 +45,7 @@
   "services": {
     "reset_last_performed": {
       "name": "Reset Last Performed",
-      "description": "Resets the last performed date for a maintenance task entity. Alias for complete_task for backward compatibility.",
+      "description": "Alias of Complete Task. A performed date applies to time intervals and calendar dates.",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
@@ -53,13 +53,13 @@
         },
         "performed_date": {
           "name": "Performed Date",
-          "description": "Optionally specify the date the task was last performed."
+          "description": "Date the task was done. Used by time intervals and calendar dates."
         }
       }
     },
     "complete_task": {
       "name": "Complete Task",
-      "description": "Mark a maintenance task as completed (resets last performed date).",
+      "description": "Mark a task done. What resets depends on the due trigger. A performed date applies to time intervals and calendar dates.",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
@@ -67,7 +67,7 @@
         },
         "performed_date": {
           "name": "Performed Date",
-          "description": "Optionally specify the date the task was last performed."
+          "description": "Date the task was done. Used by time intervals and calendar dates."
         }
       }
     },
@@ -101,7 +101,7 @@
     },
     "increment_counter": {
       "name": "Increment Counter",
-      "description": "Increment the usage counter for a frequency-based task (for example dishwasher runs).",
+      "description": "Add one to a cycle-count task. Other due triggers ignore this.",
       "fields": {
         "entity_id": {
           "name": "Entity ID",

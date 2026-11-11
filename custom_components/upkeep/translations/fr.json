@@ -45,7 +45,7 @@
   "services": {
     "reset_last_performed": {
       "name": "Réinitialiser la dernière exécution",
-      "description": "Réinitialise la date de dernière exécution d'une tâche d'entretien. Alias de complete_task pour la rétrocompatibilité.",
+      "description": "Alias de Terminer la tâche. La date s'applique aux intervalles et au calendrier.",
       "fields": {
         "entity_id": {
           "name": "ID de l'entité",
@@ -53,13 +53,13 @@
         },
         "performed_date": {
           "name": "Date d'exécution",
-          "description": "Indiquez éventuellement la date de dernière exécution de la tâche."
+          "description": "Date à laquelle la tâche a été faite. Utilisée par les intervalles et le calendrier."
         }
       }
     },
     "complete_task": {
       "name": "Terminer la tâche",
-      "description": "Marque une tâche d'entretien comme terminée (réinitialise la date de dernière exécution).",
+      "description": "Marque une tâche faite. Ce qui se réinitialise dépend du déclencheur. La date s'applique aux intervalles et au calendrier.",
       "fields": {
         "entity_id": {
           "name": "ID de l'entité",
@@ -67,7 +67,7 @@
         },
         "performed_date": {
           "name": "Date d'exécution",
-          "description": "Indiquez éventuellement la date de dernière exécution de la tâche."
+          "description": "Date à laquelle la tâche a été faite. Utilisée par les intervalles et le calendrier."
         }
       }
     },
@@ -101,7 +101,7 @@
     },
     "increment_counter": {
       "name": "Incrémenter le compteur",
-      "description": "Incrémente le compteur d'utilisation d'une tâche basée sur la fréquence (par exemple les lavages du lave-vaisselle).",
+      "description": "Ajoute un à une tâche à cycles. Les autres déclencheurs l'ignorent.",
       "fields": {
         "entity_id": {
           "name": "ID de l'entité",

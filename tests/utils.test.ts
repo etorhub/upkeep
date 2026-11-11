@@ -125,6 +125,42 @@ describe('buildTaskData', () => {
     const task = buildTaskData(e, 7, now);
     expect(task.urgency).toBe('on_track');
   });
+
+  it('maps a published meter instead of recomputing progress', () => {
+    const e = mockHassEntity({
+      attributes: {
+        upkeep_schema: 2,
+        trigger_type: 'interval',
+        urgency: 'on_track',
+        progress: 40,
+        days_remaining: 12,
+        status_key: 'status.days_left',
+        status_vars: { count: 12 },
+        next_due: '2025-03-01T00:00:00Z',
+        done_enabled: true,
+      },
+    }) as any;
+    const task = buildTaskData(e, 7, now);
+    expect(task.progress).toBe(40);
+    expect(task.urgency).toBe('on_track');
+    expect(task.status_key).toBe('status.days_left');
+  });
+
+  it('uses the card due-soon window for a date meter', () => {
+    const e = mockHassEntity({
+      attributes: {
+        upkeep_schema: 2,
+        trigger_type: 'calendar',
+        urgency: 'on_track',
+        progress: 80,
+        days_remaining: 5,
+        status_key: 'status.days_left',
+        status_vars: { count: 5 },
+      },
+    }) as any;
+    expect(buildTaskData(e, 7, now).urgency).toBe('due_soon');
+    expect(buildTaskData(e, 3, now).urgency).toBe('on_track');
+  });
 });
 
 describe('sortTasks', () => {

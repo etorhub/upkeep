@@ -7,7 +7,10 @@ from homeassistant.components import websocket_api
 from homeassistant.components.websocket_api import connection, messages
 from homeassistant.core import HomeAssistant, callback
 
+from homeassistant.util import dt as dt_util
+
 from .const import DOMAIN
+from .meters import evaluate, fresh_state, result_to_dict, validate_trigger
 from .mutations import new_task_from_data, prepare_updates
 from .notices import NOTIFY_UNITS
 
@@ -84,6 +87,7 @@ def _resolve_or_error(
         return None
 
 
+@websocket_api.async_response
 async def websocket_add_task(
     hass: HomeAssistant,
     conn: connection.ActiveConnection,
@@ -146,11 +150,40 @@ def websocket_complete_task(
     if not task_id:
         return
     try:
-        store.update_last_performed(task_id)
-    except RuntimeError as err:
+        performed = None
+        if msg.get("performed_date"):
+            performed = dt_util.parse_datetime(str(msg["performed_date"]))
+            if performed is None:
+                raise ValueError(f"Could not parse date: {msg['performed_date']}")
+        store.update_last_performed(task_id, performed)
+    except (RuntimeError, ValueError) as err:
         conn.send_error(msg["id"], "complete_failed", str(err))
         return
     conn.send_result(msg["id"], {"success": True, **store.mutation_result(task_id)})
+
+
+@callback
+def websocket_preview_task(
+    hass: HomeAssistant,
+    conn: connection.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Run the meter engine for an unsaved draft."""
+    trigger = msg.get("trigger")
+    errors = validate_trigger(trigger or {})
+    if errors:
+        conn.send_error(msg["id"], "invalid_task", errors[0])
+        return
+    draft = {
+        "title": msg.get("title") or "",
+        "enabled": True,
+        "trigger": trigger,
+        "state": msg.get("state") or fresh_state(trigger),
+        "task_type": msg.get("task_type"),
+    }
+    zone = hass.config.time_zone or "UTC"
+    result = evaluate(draft, dt_util.now(), zone, 7)
+    conn.send_result(msg["id"], result_to_dict(result))
 
 
 @callback
@@ -300,6 +333,8 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
                 vol.Optional("frequency_target"): int,
                 vol.Optional("current_count", default=0): int,
                 vol.Optional("watched_entity"): str,
+                vol.Optional("trigger"): dict,
+                vol.Optional("state"): dict,
                 vol.Optional("notify_when_due", default=False): bool,
                 vol.Optional("notify_before", default=False): bool,
                 vol.Optional("notify_before_value", default=7): vol.All(int, vol.Range(min=1)),
@@ -331,6 +366,7 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
                 vol.Required("type"): "upkeep/complete_task",
                 vol.Optional("task_id"): str,
                 vol.Optional("entity_id"): str,
+                vol.Optional("performed_date"): str,
             }
         ),
     )
@@ -381,6 +417,19 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
                 vol.Required("type"): "upkeep/enable_task",
                 vol.Optional("task_id"): str,
                 vol.Optional("entity_id"): str,
+            }
+        ),
+    )
+    websocket_api.async_register_command(
+        hass,
+        "upkeep/preview_task",
+        websocket_preview_task,
+        messages.BASE_COMMAND_MESSAGE_SCHEMA.extend(
+            {
+                vol.Required("type"): "upkeep/preview_task",
+                vol.Required("trigger"): dict,
+                vol.Optional("state"): dict,
+                vol.Optional("title"): str,
             }
         ),
     )

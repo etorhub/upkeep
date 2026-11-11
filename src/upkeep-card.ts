@@ -174,7 +174,8 @@ export class HomeMaintenanceCard extends LitElement {
     const snoozed = tasks.length - active.length;
     const overdue = active.filter((task) => task.urgency === 'overdue').length;
     const dueSoon = active.filter((task) => task.urgency === 'due_soon').length;
-    if (active.length > 0 && overdue === 0 && dueSoon === 0 && snoozed === 0) {
+    const unknown = active.filter((task) => task.urgency === 'unknown').length;
+    if (active.length > 0 && overdue === 0 && dueSoon === 0 && snoozed === 0 && unknown === 0) {
       return this._t('panel.summary_clear', { tasks: taskCount });
     }
     const parts = [
@@ -194,7 +195,7 @@ export class HomeMaintenanceCard extends LitElement {
 
   private _filterCount(
     tasks: TaskData[],
-    filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed'
+    filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed' | 'unknown'
   ): number {
     if (filter === 'snoozed') return tasks.filter((task) => task.urgency === 'snoozed').length;
     const active = tasks.filter((task) => task.urgency !== 'snoozed');
@@ -203,7 +204,7 @@ export class HomeMaintenanceCard extends LitElement {
   }
 
   private _filterLabel(
-    filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed',
+    filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed' | 'unknown',
     count: number
   ): string {
     const plural = (one: string, other: string) => this._t(this._isOne(count) ? one : other);
@@ -218,6 +219,8 @@ export class HomeMaintenanceCard extends LitElement {
         return this._t('panel.filter_on_track');
       case 'snoozed':
         return plural('panel.filter_snoozed_one', 'panel.filter_snoozed_other');
+      case 'unknown':
+        return this._t('editor.filter_unknown');
     }
   }
 

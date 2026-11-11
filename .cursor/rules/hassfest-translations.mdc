@@ -1,0 +1,13 @@
+---
+description: Keep Home Assistant translation files limited to official hassfest keys. Use when adding backend copy, notices, or files under translations/ or strings/.
+globs: custom_components/upkeep/translations/**/*.json,custom_components/upkeep/strings/**/*.json,custom_components/upkeep/notices.py
+alwaysApply: false
+---
+
+# Home Assistant translation files
+
+`custom_components/upkeep/translations/` is validated by hassfest. Each file may contain only official roots: `title`, `config`, `config_subentries`, `options`, `preview_features`, `selector`, `device_automation`, `system_health`, `config_panel`, `application_credentials`, `issues`, `entity_component`, `device`, `entity`, `exceptions`, `services`, `conditions`, `triggers`, `conversation`, and `common`.
+
+Persistent notifications and any other integration-only copy go in `custom_components/upkeep/strings/{language}.json` as a flat map of strings. `notice_catalog` loads that directory. A custom root such as `notices` inside `translations/` fails hassfest.
+
+Keep en, es, ca, fr, de, it, nl, and pt in sync. `npm run check:i18n` checks the catalogs and rejects unknown roots in `translations/`.

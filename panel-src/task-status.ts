@@ -1,6 +1,6 @@
 import type { Task } from './types';
 
-export type PanelTaskUrgency = 'on_track' | 'due_soon' | 'overdue' | 'snoozed';
+export type PanelTaskUrgency = 'on_track' | 'due_soon' | 'overdue' | 'snoozed' | 'unknown';
 
 export interface PanelTaskStatus {
   urgency: PanelTaskUrgency;
@@ -33,9 +33,19 @@ export function computePanelTaskStatus(
     return { urgency: 'snoozed', days_remaining: 0, progress: 0 };
   }
 
-  if (task.task_type === 'frequency') {
-    const target = task.frequency_target ?? 1;
-    const current = task.current_count ?? 0;
+  const trigger = task.trigger;
+  if (
+    trigger &&
+    trigger.type !== 'interval' &&
+    trigger.type !== 'cycle' &&
+    task.task_type !== 'frequency'
+  ) {
+    return { urgency: 'unknown', days_remaining: 0, progress: 0 };
+  }
+
+  if (task.task_type === 'frequency' || trigger?.type === 'cycle') {
+    const target = trigger?.target ?? task.frequency_target ?? 1;
+    const current = task.state?.count ?? task.current_count ?? 0;
     const progress = target > 0 ? Math.round((current / target) * 100) : 0;
     const usesRemaining = Math.max(0, target - current);
     let urgency: PanelTaskUrgency;
@@ -49,14 +59,23 @@ export function computePanelTaskStatus(
     return { urgency, days_remaining: usesRemaining, progress };
   }
 
-  const lastStr = task.last_performed;
+  const lastStr =
+    trigger?.type === 'interval'
+      ? (task.state?.last_performed ?? task.last_performed)
+      : task.last_performed;
   if (!lastStr) {
     return { urgency: 'overdue', days_remaining: 0, progress: 100 };
   }
 
   const last = midnight(new Date(lastStr));
-  const intervalValue = task.interval_value ?? 30;
-  const intervalType = task.interval_type ?? 'days';
+  const intervalValue =
+    trigger?.type === 'interval'
+      ? (trigger.every ?? task.interval_value ?? 30)
+      : (task.interval_value ?? 30);
+  const intervalType =
+    trigger?.type === 'interval'
+      ? (trigger.unit ?? task.interval_type ?? 'days')
+      : (task.interval_type ?? 'days');
   const due = midnight(addInterval(last, intervalValue, intervalType));
   const nowMid = midnight(now);
 

@@ -45,7 +45,7 @@
   "services": {
     "reset_last_performed": {
       "name": "Restablecer última realización",
-      "description": "Restablece la fecha de la última vez que se realizó una tarea de mantenimiento. Alias de complete_task por compatibilidad.",
+      "description": "Alias de Completar tarea. La fecha se aplica a intervalos y al calendario.",
       "fields": {
         "entity_id": {
           "name": "ID de entidad",
@@ -53,13 +53,13 @@
         },
         "performed_date": {
           "name": "Fecha de realización",
-          "description": "Permite indicar la fecha en que se realizó la tarea por última vez."
+          "description": "Fecha en que se hizo la tarea. La usan los intervalos y el calendario."
         }
       }
     },
     "complete_task": {
       "name": "Completar tarea",
-      "description": "Marca una tarea de mantenimiento como completada (reinicia la fecha de la última realización).",
+      "description": "Marca una tarea como hecha. Lo que se reinicia depende del aviso. La fecha se aplica a intervalos y al calendario.",
       "fields": {
         "entity_id": {
           "name": "ID de entidad",
@@ -67,7 +67,7 @@
         },
         "performed_date": {
           "name": "Fecha de realización",
-          "description": "Permite indicar la fecha en que se realizó la tarea por última vez."
+          "description": "Fecha en que se hizo la tarea. La usan los intervalos y el calendario."
         }
       }
     },
@@ -101,7 +101,7 @@
     },
     "increment_counter": {
       "name": "Incrementar contador",
-      "description": "Incrementa el contador de uso de una tarea basada en la frecuencia (por ejemplo, lavados del lavavajillas).",
+      "description": "Suma uno a una tarea de recuento. Los otros avisos lo ignoran.",
       "fields": {
         "entity_id": {
           "name": "ID de entidad",

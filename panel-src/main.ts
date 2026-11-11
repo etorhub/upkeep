@@ -2,7 +2,12 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { localize } from '../src/localize/localize';
+import { formatPart } from '../src/status-format';
 import { formatDaysRemaining, getUrgencyColor } from '../src/utils';
+import { defaultTrigger } from './triggers/catalog';
+import { renderTriggerFields, validateDraft } from './triggers/fields';
+import { renderTriggerPicker } from './triggers/picker';
+import { renderPreview, PreviewResult } from './triggers/preview';
 import {
   advanceNoticeSkipped,
   computePanelTaskStatus,
@@ -16,7 +21,7 @@ export type { Task } from './types';
 const DUE_SOON_DAYS = 7;
 const COMPLETE_FLASH_MS = 1500;
 const DEFAULT_ICON = 'mdi:calendar-check';
-const FILTERS = ['all', 'overdue', 'due_soon', 'on_track', 'snoozed'] as const;
+const FILTERS = ['all', 'overdue', 'due_soon', 'on_track', 'unknown', 'snoozed'] as const;
 
 type FormMode = 'none' | 'add' | 'edit';
 
@@ -29,7 +34,10 @@ export class UpkeepPanel extends LitElement {
   @state() private _error: string | null = null;
   @state() private _formMode: FormMode = 'none';
   @state() private _editingTaskId: string | null = null;
-  @state() private _filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed' = 'all';
+  @state() private _filter: (typeof FILTERS)[number] = 'all';
+  @state() private _draftTrigger: Record<string, unknown> = defaultTrigger('interval');
+  @state() private _triggerPickerOpen = false;
+  @state() private _preview: PreviewResult | null = null;
   @state() private _draftTitle = '';
   @state() private _draftDescription = '';
   @state() private _draftIcon = DEFAULT_ICON;
@@ -50,6 +58,7 @@ export class UpkeepPanel extends LitElement {
   @state() private _rowErrors: Record<string, string> = {};
   @state() private _viewportNarrow = false;
   private _loadRequestId = 0;
+  private _previewTimer: number | undefined;
   private _media: MediaQueryList | null = null;
   private _onViewport = (event: MediaQueryListEvent): void => {
     this._viewportNarrow = event.matches;
@@ -148,15 +157,54 @@ export class UpkeepPanel extends LitElement {
   }
 
   private _getTaskStatus(task: Task) {
+    const entityId = task.entity_id;
+    const attrs = entityId ? this.hass?.states?.[entityId]?.attributes : undefined;
+    if (attrs && typeof attrs.urgency === 'string') {
+      return {
+        urgency: attrs.urgency as 'on_track' | 'due_soon' | 'overdue' | 'snoozed' | 'unknown',
+        days_remaining: Number(attrs.days_remaining ?? 0),
+        progress: Number(attrs.progress ?? 0),
+        status_key: attrs.status_key as string | undefined,
+        status_vars: attrs.status_vars as Record<string, string | number> | undefined,
+        rule_key: attrs.rule_key as string | undefined,
+        rule_vars: attrs.rule_vars as Record<string, string | number> | undefined,
+        meters: attrs.meters as
+          | {
+              progress?: number;
+              leading?: boolean;
+              status_key?: string;
+              status_vars?: Record<string, string | number>;
+            }[]
+          | undefined,
+        done_enabled: attrs.done_enabled !== false,
+        tag_key: attrs.tag_key as string | undefined,
+      };
+    }
     return computePanelTaskStatus(task, DUE_SOON_DAYS);
   }
 
   private _filteredTasks(): Task[] {
-    return this._tasks.filter((task) => {
+    const rank: Record<string, number> = {
+      overdue: 0,
+      due_soon: 1,
+      on_track: 2,
+      unknown: 3,
+      snoozed: 4,
+    };
+    const tasks = this._tasks.filter((task) => {
       if (this._filter === 'snoozed') return !task.enabled;
       if (this._filter === 'all') return task.enabled;
       const { urgency } = this._getTaskStatus(task);
       return urgency === this._filter;
+    });
+    return tasks.sort((left, right) => {
+      const leftStatus = this._getTaskStatus(left);
+      const rightStatus = this._getTaskStatus(right);
+      const byRank = (rank[leftStatus.urgency] ?? 2) - (rank[rightStatus.urgency] ?? 2);
+      if (byRank !== 0) return byRank;
+      if (rightStatus.progress !== leftStatus.progress)
+        return rightStatus.progress - leftStatus.progress;
+      return left.title.localeCompare(right.title);
     });
   }
 
@@ -188,6 +236,8 @@ export class UpkeepPanel extends LitElement {
         return plural('panel.filter_due_soon_one', 'panel.filter_due_soon_other');
       case 'on_track':
         return this._t('panel.filter_on_track');
+      case 'unknown':
+        return this._t('panel.filter_unknown');
       case 'snoozed':
         return plural('panel.filter_snoozed_one', 'panel.filter_snoozed_other');
     }
@@ -452,9 +502,13 @@ export class UpkeepPanel extends LitElement {
   private _renderTaskForm() {
     const isEdit = this._formMode === 'edit';
     const isFrequency = this._draftTaskType === 'frequency';
+    const dateLike = ['interval', 'calendar', 'idle', 'condition', 'either'].includes(
+      String(this._currentTrigger().type || 'interval')
+    );
 
     const titleMissing = this._draftTitle.trim().length === 0;
-    const notifyBefore = !isFrequency && this._draftNotifyBefore;
+    const showBefore = dateLike && !isFrequency;
+    const notifyBefore = showBefore && this._draftNotifyBefore;
     const notifyOn = notifyBefore || this._draftNotifyWhenDue;
     const notifyServices = this._notifyServiceOptions();
 
@@ -536,7 +590,30 @@ export class UpkeepPanel extends LitElement {
             </label>
           </div>
         </div>
-        ${isFrequency
+        ${renderTriggerPicker({
+          open: this._triggerPickerOpen,
+          selected: String(this._currentTrigger().type || 'interval'),
+          label: (key) => this._t(key),
+          onToggle: () => {
+            this._triggerPickerOpen = !this._triggerPickerOpen;
+          },
+          onSelect: (id, commit) => {
+            if (commit) {
+              this._selectTrigger(id);
+              return;
+            }
+            this._draftTrigger = defaultTrigger(id);
+            this._triggerPickerOpen = true;
+          },
+        })}
+        ${renderPreview({
+          preview: this._preview,
+          editing: isEdit,
+          label: (key) => this._t(key),
+          locale: this._locale(),
+          hass: this.hass,
+        })}
+        ${isFrequency && this._currentTrigger().type !== 'cycle'
           ? html`
               <div class="form-row">
                 <label class="form-field-label" for="task-frequency-target">
@@ -552,50 +629,60 @@ export class UpkeepPanel extends LitElement {
                 </label>
               </div>
             `
-          : html`
-              <fieldset class="repeat-fieldset">
-                <legend>${this._t('panel.repeat')}</legend>
-                <div class="repeat-row">
-                  <label class="form-field-label schedule-field" for="task-interval">
-                    <span>${this._t('panel.every')}</span>
-                    <input
-                      id="task-interval"
-                      name="interval"
-                      class="interval-input"
-                      type="number"
-                      .value=${this._draftInterval}
-                      @input=${this._onIntervalInput}
-                      min="1"
-                      required
-                    />
-                  </label>
-                  <div class="segments" role="radiogroup" aria-label=${this._t('panel.period')}>
-                    ${periods.map(
-                      (period) => html`
-                        <label class="segment">
-                          <input
-                            type="radio"
-                            name="period"
-                            value=${period}
-                            .checked=${this._draftPeriod === period}
-                            @change=${() => {
-                              this._draftPeriod = period;
-                            }}
-                          />
-                          <span>${this._t(`panel.unit_${period}_other`)}</span>
-                        </label>
-                      `
-                    )}
+          : this._currentTrigger().type === 'interval'
+            ? html`
+                <fieldset class="repeat-fieldset">
+                  <legend>${this._t('panel.repeat')}</legend>
+                  <div class="repeat-row">
+                    <label class="form-field-label schedule-field" for="task-interval">
+                      <span>${this._t('panel.every')}</span>
+                      <input
+                        id="task-interval"
+                        name="interval"
+                        class="interval-input"
+                        type="number"
+                        .value=${this._draftInterval}
+                        @input=${this._onIntervalInput}
+                        min="1"
+                        required
+                      />
+                    </label>
+                    <div class="segments" role="radiogroup" aria-label=${this._t('panel.period')}>
+                      ${periods.map(
+                        (period) => html`
+                          <label class="segment">
+                            <input
+                              type="radio"
+                              name="period"
+                              value=${period}
+                              .checked=${this._draftPeriod === period}
+                              @change=${() => {
+                                this._draftPeriod = period;
+                              }}
+                            />
+                            <span>${this._t(`panel.unit_${period}_other`)}</span>
+                          </label>
+                        `
+                      )}
+                    </div>
                   </div>
-                </div>
-                <p class="schedule-preview">${this._schedulePreview()}</p>
-              </fieldset>
-            `}
+                  <p class="schedule-preview">${this._schedulePreview()}</p>
+                </fieldset>
+              `
+            : renderTriggerFields({
+                trigger: this._currentTrigger(),
+                hass: this.hass,
+                label: (key) => this._t(key),
+                tasks: this._tasks.map((task) => ({ id: task.id, title: task.title })),
+                onChange: (trigger) => {
+                  this._draftTrigger = trigger;
+                  this._queuePreview();
+                },
+              })}
         <fieldset class="notify-fieldset">
           <legend>${this._t('panel.notifications')}</legend>
-          ${isFrequency
-            ? nothing
-            : html`
+          ${showBefore
+            ? html`
                 <label class="switch-field" for="task-notify-before">
                   <span>${this._t('panel.notify_before')}</span>
                   <input
@@ -608,7 +695,8 @@ export class UpkeepPanel extends LitElement {
                     @change=${this._onNotifyBeforeChange}
                   />
                 </label>
-              `}
+              `
+            : nothing}
           ${notifyBefore
             ? html`
                 <div class="form-row schedule-row">
@@ -743,7 +831,23 @@ export class UpkeepPanel extends LitElement {
     this._draftDescription = task.description ?? '';
     this._draftIcon = task.icon || DEFAULT_ICON;
     this._draftTaskType = task.task_type === 'frequency' ? 'frequency' : 'time';
-    this._draftInterval = String(task.interval_value ?? 90);
+    this._draftTrigger = task.trigger
+      ? { ...task.trigger }
+      : task.task_type === 'frequency'
+        ? {
+            type: 'cycle',
+            mode: task.watched_entity ? 'run' : 'manual',
+            target: task.frequency_target ?? 10,
+            entity_id: task.watched_entity,
+            running_state: 'on',
+            minimum: { value: 0, unit: 'seconds' },
+          }
+        : {
+            type: 'interval',
+            every: task.interval_value ?? 90,
+            unit: task.interval_type ?? 'days',
+          };
+    this._draftInterval = String(task.interval_value ?? task.trigger?.every ?? 90);
     this._draftPeriod = task.interval_type ?? 'days';
     this._draftFrequencyTarget = String(task.frequency_target ?? 10);
     this._draftNotifyBefore = task.task_type !== 'frequency' && Boolean(task.notify_before);
@@ -767,6 +871,9 @@ export class UpkeepPanel extends LitElement {
     this._draftInterval = '90';
     this._draftPeriod = 'days';
     this._draftTaskType = 'time';
+    this._draftTrigger = defaultTrigger('interval');
+    this._triggerPickerOpen = false;
+    this._preview = null;
     this._draftFrequencyTarget = '10';
     this._draftNotifyBefore = false;
     this._draftNotifyBeforeValue = '7';
@@ -879,21 +986,89 @@ export class UpkeepPanel extends LitElement {
     return updates;
   }
 
+  private _currentTrigger(): Record<string, unknown> {
+    const trigger = this._draftTrigger ?? defaultTrigger('interval');
+    if (trigger.type === 'interval') {
+      return {
+        type: 'interval',
+        every: parseInt(this._draftInterval, 10) || 90,
+        unit: this._draftPeriod,
+      };
+    }
+    if (this._draftTaskType === 'frequency' && trigger.type !== 'cycle') {
+      return {
+        type: 'cycle',
+        mode: 'manual',
+        target: parseInt(this._draftFrequencyTarget, 10) || 10,
+      };
+    }
+    return trigger;
+  }
+
+  private _selectTrigger(id: string): void {
+    const trigger = defaultTrigger(id);
+    this._draftTrigger = trigger;
+    this._triggerPickerOpen = false;
+    if (id === 'interval') {
+      this._draftTaskType = 'time';
+      this._draftInterval = String(trigger.every ?? 90);
+      this._draftPeriod = String(trigger.unit ?? 'days');
+    }
+    this._queuePreview();
+    this.updateComplete.then(() => {
+      const picker = this.renderRoot?.querySelector('.trigger-picker') as HTMLElement | null;
+      picker?.focus();
+    });
+  }
+
+  private _queuePreview(): void {
+    window.clearTimeout(this._previewTimer);
+    this._previewTimer = window.setTimeout(() => {
+      void this._loadPreview();
+    }, 200);
+  }
+
+  private async _loadPreview(): Promise<void> {
+    if (this._formMode === 'none' || !this.hass?.connection) return;
+    try {
+      const result = await this._sendCommand({
+        type: 'upkeep/preview_task',
+        title: this._draftTitle,
+        trigger: this._currentTrigger(),
+      });
+      this._preview = (result ?? null) as PreviewResult | null;
+    } catch {
+      this._preview = null;
+    }
+  }
+
   private _submitAdd = async () => {
     const title = this._draftTitle.trim();
     if (!title) return;
+    const trigger = this._currentTrigger();
+    if (this._draftTaskType !== 'frequency') {
+      const errorKey = validateDraft(trigger, null);
+      if (errorKey) {
+        this._error = this._t(errorKey);
+        return;
+      }
+    }
     const interval = parseInt(this._draftInterval, 10) || 90;
     const interval_type = this._draftPeriod;
+    const payload: Record<string, unknown> = {
+      type: 'upkeep/add_task',
+      title,
+      description: this._draftDescription.trim() || undefined,
+      icon: this._draftIcon,
+      trigger,
+      ...this._noticeUpdates(),
+    };
+    if (trigger.type === 'interval') {
+      payload.interval_value = interval;
+      payload.interval_type = interval_type;
+    }
     try {
-      await this._sendCommand({
-        type: 'upkeep/add_task',
-        title,
-        description: this._draftDescription.trim() || undefined,
-        icon: this._draftIcon,
-        interval_value: interval,
-        interval_type,
-        ...this._noticeUpdates(),
-      });
+      await this._sendCommand(payload as { type: string; [key: string]: unknown });
       this._cancelForm();
       this._refresh();
     } catch (e) {
@@ -914,11 +1089,19 @@ export class UpkeepPanel extends LitElement {
       ...this._noticeUpdates(),
     };
 
-    if (this._draftTaskType === 'frequency') {
+    const trigger = this._currentTrigger();
+    if (this._draftTaskType === 'frequency' && trigger.type !== 'cycle') {
       updates.frequency_target = parseInt(this._draftFrequencyTarget, 10) || 10;
-    } else {
+    } else if (trigger.type === 'interval') {
       updates.interval_value = parseInt(this._draftInterval, 10) || 90;
       updates.interval_type = this._draftPeriod;
+    } else {
+      const errorKey = validateDraft(trigger, taskId);
+      if (errorKey) {
+        this._error = this._t(errorKey);
+        return;
+      }
+      updates.trigger = trigger;
     }
 
     try {
@@ -1152,13 +1335,20 @@ export class UpkeepPanel extends LitElement {
     const locale = this._locale();
     const metaColor = getUrgencyColor(urgency);
     const taskType = task.task_type === 'frequency' ? 'frequency' : 'time';
-    const metaText =
-      task.task_type === 'frequency'
+    const statusKey = 'status_key' in status ? status.status_key : undefined;
+    const metaText = statusKey
+      ? formatPart(
+          { key: statusKey, vars: 'status_vars' in status ? status.status_vars : undefined },
+          locale,
+          this.hass
+        )
+      : task.task_type === 'frequency'
         ? this._t('panel.uses_progress', {
             current: task.current_count ?? 0,
             target: task.frequency_target ?? 0,
           })
         : formatDaysRemaining(days_remaining, locale, taskType);
+    const doneEnabled = !('done_enabled' in status) || status.done_enabled !== false;
     const rowError = this._rowErrors[task.id];
     const justCompleted = this._justCompletedIds.includes(task.id);
     const isEditing = this._editingTaskId === task.id && this._formMode === 'edit';
@@ -1188,7 +1378,7 @@ export class UpkeepPanel extends LitElement {
           <ha-icon .icon=${task.icon || 'mdi:calendar-check'} style="color:${metaColor}"></ha-icon>
           <span class="task-copy">
             <span class="task-title">${task.title}</span>
-            <span class="task-schedule">${this._taskSchedule(task)}</span>
+            <span class="task-schedule">${this._taskSchedule(task, status)}</span>
           </span>
         </button>
         <div class="task-progress">
@@ -1207,13 +1397,20 @@ export class UpkeepPanel extends LitElement {
             ></span>
           </div>
         </div>
-        ${this._renderTaskActions(task, isSnoozed, urgent)}
+        ${this._renderTaskActions(task, isSnoozed, urgent, doneEnabled)}
         ${rowError ? html`<div class="row-error">${rowError}</div>` : nothing}
       </div>
     `;
   }
 
-  private _taskSchedule(task: Task): string {
+  private _taskSchedule(task: Task, status: object = {}): string {
+    const ruleKey =
+      'rule_key' in status && typeof status.rule_key === 'string' ? status.rule_key : undefined;
+    const ruleVars =
+      'rule_vars' in status && status.rule_vars && typeof status.rule_vars === 'object'
+        ? (status.rule_vars as Record<string, string | number>)
+        : undefined;
+    if (ruleKey) return formatPart({ key: ruleKey, vars: ruleVars }, this._locale(), this.hass);
     if (task.task_type === 'frequency') {
       return this._t('panel.frequency_uses');
     }
@@ -1231,7 +1428,7 @@ export class UpkeepPanel extends LitElement {
     return `${every} · ${this._t('panel.due_on', { date: this._formatDate(due) })}`;
   }
 
-  private _renderTaskActions(task: Task, isSnoozed: boolean, urgent: boolean) {
+  private _renderTaskActions(task: Task, isSnoozed: boolean, urgent: boolean, doneEnabled = true) {
     const isCompleting = this._completingIds.includes(task.id);
     const justCompleted = this._justCompletedIds.includes(task.id);
     const menuOpen = this._openMenuId === task.id;
@@ -1273,7 +1470,7 @@ export class UpkeepPanel extends LitElement {
               <button
                 type="button"
                 class="btn btn-complete ${urgent ? 'urgent' : 'quiet'}"
-                ?disabled=${isCompleting}
+                ?disabled=${isCompleting || !doneEnabled}
                 @click=${() => this._completeTask(task)}
               >
                 ${isCompleting ? '…' : this._t('panel.complete')}
@@ -1561,6 +1758,31 @@ export class UpkeepPanel extends LitElement {
       }
       .btn-icon ha-icon {
         --mdc-icon-size: 18px;
+      }
+      .trigger-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .trigger-option {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        width: 100%;
+        text-align: start;
+        background: transparent;
+        color: var(--primary-text-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        padding: 8px;
+      }
+      .trigger-option small {
+        display: block;
+        color: var(--secondary-text-color);
+      }
+      .trigger-option.active {
+        border-color: var(--primary-color);
       }
       .task-form {
         background: var(--card-background-color);

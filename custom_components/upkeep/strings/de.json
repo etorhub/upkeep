@@ -1,0 +1,6 @@
+{
+  "title": "Upkeep",
+  "due": "{title} ist fällig",
+  "before": "{title} steht bald an",
+  "reset_failed": "Upkeep konnte den Lebensdauerzähler für {title} nicht zurücksetzen"
+}
