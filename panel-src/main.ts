@@ -456,7 +456,6 @@ export class UpkeepPanel extends LitElement {
     const titleMissing = this._draftTitle.trim().length === 0;
     const notifyBefore = !isFrequency && this._draftNotifyBefore;
     const notifyOn = notifyBefore || this._draftNotifyWhenDue;
-    const serviceMissing = notifyOn && this._draftNotifyService.trim().length === 0;
     const notifyServices = this._notifyServiceOptions();
 
     const periods = ['days', 'weeks', 'months'] as const;
@@ -624,7 +623,6 @@ export class UpkeepPanel extends LitElement {
                       @input=${this._onNotifyAheadInput}
                       min="1"
                       inputmode="numeric"
-                      required
                     />
                   </label>
                   <label class="form-field-label schedule-field" for="task-notify-unit">
@@ -673,7 +671,6 @@ export class UpkeepPanel extends LitElement {
                       name="notify_service"
                       .value=${this._draftNotifyService}
                       @change=${this._onNotifyServiceChange}
-                      required
                     >
                       ${notifyServices.map(
                         (service) => html`
@@ -703,7 +700,7 @@ export class UpkeepPanel extends LitElement {
           <button type="button" class="btn btn-secondary" @click=${this._cancelForm}>
             ${this._t('panel.cancel')}
           </button>
-          <button type="submit" class="btn btn-done" ?disabled=${titleMissing || serviceMissing}>
+          <button type="submit" class="btn btn-done" ?disabled=${titleMissing}>
             ${isEdit ? this._t('panel.save') : this._t('panel.add_task')}
           </button>
         </div>
@@ -714,10 +711,6 @@ export class UpkeepPanel extends LitElement {
   private _onFormSubmit = (ev: Event): void => {
     ev.preventDefault();
     if (!this._draftTitle.trim()) return;
-    const notifyBefore = this._draftTaskType !== 'frequency' && this._draftNotifyBefore;
-    if ((notifyBefore || this._draftNotifyWhenDue) && !this._draftNotifyService.trim()) {
-      return;
-    }
     if (this._formMode === 'edit') {
       void this._submitEdit();
       return;
@@ -871,13 +864,19 @@ export class UpkeepPanel extends LitElement {
 
   private _noticeUpdates(): Record<string, unknown> {
     const notifyBefore = this._draftTaskType !== 'frequency' && this._draftNotifyBefore;
-    return {
+    const updates: Record<string, unknown> = {
       notify_before: notifyBefore,
-      notify_before_value: this._notifyAheadValue(),
-      notify_before_unit: this._draftNotifyBeforeUnit,
       notify_when_due: this._draftNotifyWhenDue,
-      notify_service: this._draftNotifyService.trim() || null,
     };
+    if (notifyBefore) {
+      updates.notify_before_value = this._notifyAheadValue();
+      updates.notify_before_unit = this._draftNotifyBeforeUnit;
+    }
+    const service = this._draftNotifyService.trim();
+    if ((notifyBefore || this._draftNotifyWhenDue) && service) {
+      updates.notify_service = service;
+    }
+    return updates;
   }
 
   private _submitAdd = async () => {
