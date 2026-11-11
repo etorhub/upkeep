@@ -61,8 +61,13 @@ src/
 ```bash
 npm install
 npx lefthook install   # Optional: git hooks
-npm start              # Dev server on :5000
+npm run dev:up         # Home Assistant at http://localhost:8124, integration bind-mounted
+npm run dev:watch      # Rebuild card and panel into the mounted component
+npm run dev:restart    # Required after Python edits
+npm start              # Card-only server on :5000; does not load the integration
 ```
+
+Local config, auth, and task data live in `dev/config/` (gitignored). See [CONTRIBUTING.md](CONTRIBUTING.md). Do not commit local credentials.
 
 **Pre-commit:** lint, typecheck, test, format check (no committed bundles)
 

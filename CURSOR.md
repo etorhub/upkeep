@@ -50,8 +50,13 @@ src/
 
 | Command              | Description |
 | -------------------- | ----------- |
-| `npm start`          | Dev build + watch + serve on :5000 |
-| `npm run build`      | Production build to `dist/` |
+| `npm run dev:up`     | Build, then start Home Assistant on `:8124` with this integration mounted |
+| `npm run dev:watch`  | Rebuild card and panel into the mounted component |
+| `npm run dev:restart`| Restart Home Assistant after Python edits |
+| `npm run dev:logs`   | Follow the Home Assistant container logs |
+| `npm run dev:down`   | Stop the Home Assistant container |
+| `npm start`          | Card-only dev server on `:5000`; does not load the integration |
+| `npm run build`      | Production build to `dist/` and `custom_components/upkeep/` |
 | `npm run test`       | Vitest |
 | `npm run lint`       | ESLint |
 | `npm run typecheck`  | TypeScript check |
@@ -64,5 +69,8 @@ src/
 
 ## Local Testing in HA
 
-1. `npm start` → serves at `http://localhost:5000`
-2. Add Lovelace resource: URL `http://<dev-ip>:5000/upkeep-card.js`, type JavaScript Module
+`npm run dev:up` starts Home Assistant at `http://localhost:8124` and bind-mounts `custom_components/upkeep`. Config stays in `dev/config/` and is gitignored. Do not commit local credentials.
+
+1. Create the local user during onboarding, then add **Upkeep** under **Settings → Devices & Services**.
+2. `npm run dev:watch` while editing the card or panel, then refresh the browser.
+3. `npm run dev:restart` after Python edits. Reloading the config entry does not reimport the component.
