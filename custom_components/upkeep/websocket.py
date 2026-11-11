@@ -1,17 +1,15 @@
 """WebSocket commands for the Upkeep integration."""
 
-import uuid
 from typing import Any
 
 import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.components.websocket_api import connection, messages
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
-from .notices import NOTIFY_UNITS, validate_notice_updates
-from .store import UpkeepTask
+from .mutations import new_task_from_data, prepare_updates
+from .notices import NOTIFY_UNITS
 
 
 @callback
@@ -50,80 +48,63 @@ def websocket_get_task(
         return
     task_id = msg["task_id"]
     result = store.get(task_id)
+    if result is None:
+        conn.send_error(msg["id"], "not_found", f"No Upkeep task found for {task_id}")
+        return
+    result["entity_id"] = store.entity_id_for(task_id)
     conn.send_result(msg["id"], result)
 
 
-def _parse_last_performed(last_str: str | None) -> str | None:
-    """Parse last_performed to ISO string."""
-    if not last_str:
+def _store_or_error(
+    hass: HomeAssistant,
+    conn: connection.ActiveConnection,
+    msg: dict[str, Any],
+):
+    """Return the task store, or send not_loaded and return None."""
+    store = hass.data.get(DOMAIN, {}).get("store")
+    if not store:
+        conn.send_error(msg["id"], "not_loaded", "Integration not loaded")
         return None
-    parsed = dt_util.parse_datetime(last_str)
-    if parsed is None:
-        return None
-    parsed_local = dt_util.as_local(parsed)
-    return parsed_local.replace(
-        hour=0, minute=0, second=0, microsecond=0
-    ).isoformat()
+    return store
 
 
-@callback
-def websocket_add_task(
+def _resolve_or_error(
+    store: Any,
+    conn: connection.ActiveConnection,
+    msg: dict[str, Any],
+) -> str | None:
+    """Resolve entity_id or task_id, or send an error and return None."""
+    try:
+        return store.resolve_task_id(
+            entity_id=msg.get("entity_id"),
+            task_id=msg.get("task_id"),
+        )
+    except RuntimeError as err:
+        conn.send_error(msg["id"], "not_found", str(err))
+        return None
+
+
+async def websocket_add_task(
     hass: HomeAssistant,
     conn: connection.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
     """Add a new task."""
-    store = hass.data.get(DOMAIN, {}).get("store")
+    store = _store_or_error(hass, conn, msg)
     if not store:
-        conn.send_error(msg["id"], "not_loaded", "Integration not loaded")
         return
 
-    last_str = msg.get("last_performed")
-    last_performed = _parse_last_performed(last_str)
-    if last_str and last_performed is None:
-        conn.send_error(msg["id"], "invalid_date", f"Could not parse date: {last_str}")
-        return
-    if last_performed is None:
-        last_performed = (
-            dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
-        )
-
-    notice_fields = {}
-    if "notify_service" in msg:
-        notice_fields["notify_service"] = msg.get("notify_service")
-    notice_error = validate_notice_updates(notice_fields)
-    if notice_error:
-        conn.send_error(msg["id"], "invalid_notify", notice_error)
-        return
-
-    task_type = msg.get("task_type", "time")
-    new_task = UpkeepTask(
-        id=f"upkeep_{uuid.uuid4().hex}",
-        title=msg["title"],
-        description=msg.get("description"),
-        task_type=task_type,
-        interval_value=msg.get("interval_value", 30),
-        interval_type=msg.get("interval_type", "days"),
-        last_performed=last_performed,
-        tag_id=msg.get("tag_id"),
-        icon=msg.get("icon"),
-        assigned_user=msg.get("assigned_user"),
-        frequency_target=msg.get("frequency_target"),
-        current_count=msg.get("current_count", 0),
-        watched_entity=msg.get("watched_entity"),
-        notify_when_due=msg.get("notify_when_due", False),
-        notify_before=msg.get("notify_before", False),
-        notify_before_value=msg.get("notify_before_value", 7),
-        notify_before_unit=msg.get("notify_before_unit", "days"),
-        notify_service=notice_fields.get("notify_service"),
-    )
-
-    labels = msg.get("labels", [])
+    payload = {key: value for key, value in msg.items() if key not in {"id", "type"}}
     try:
-        new_id = store.add(new_task, labels)
-        conn.send_result(msg["id"], {"success": True, "id": new_id})
-    except RuntimeError as e:
-        conn.send_error(msg["id"], "add_failed", str(e))
+        new_task, labels = new_task_from_data(payload)
+        created = await store.async_add(new_task, labels)
+    except ValueError as err:
+        conn.send_error(msg["id"], "invalid_task", str(err))
+        return
+    except RuntimeError as err:
+        conn.send_error(msg["id"], "add_failed", str(err))
+        return
+    conn.send_result(msg["id"], {"success": True, "id": created["task_id"], **created})
 
 
 @callback
@@ -133,41 +114,22 @@ def websocket_update_task(
     msg: dict[str, Any],
 ) -> None:
     """Update a task."""
-    store = hass.data.get(DOMAIN, {}).get("store")
+    store = _store_or_error(hass, conn, msg)
     if not store:
-        conn.send_error(msg["id"], "not_loaded", "Integration not loaded")
         return
-    task_id = msg["task_id"]
-    updates = msg.get("updates", {})
-    for internal_key in (
-        "notified_before_due",
-        "notified_due_on",
-        "notified_frequency_due",
-    ):
-        updates.pop(internal_key, None)
-
-    if "last_performed" in updates:
-        last_str = updates["last_performed"]
-        last_performed = _parse_last_performed(last_str)
-        if last_str and last_performed is None:
-            conn.send_error(
-                msg["id"], "invalid_date", f"Could not parse date: {last_str}"
-            )
-            return
-        updates["last_performed"] = last_performed or (
-            dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
-        )
-
-    notice_error = validate_notice_updates(updates)
-    if notice_error:
-        conn.send_error(msg["id"], "invalid_notify", notice_error)
+    task_id = _resolve_or_error(store, conn, msg)
+    if not task_id:
         return
-
     try:
-        store.update_task(task_id, updates)
-        conn.send_result(msg["id"], {"success": True})
-    except RuntimeError as e:
-        conn.send_error(msg["id"], "update_failed", str(e))
+        updates = prepare_updates(dict(msg.get("updates") or {}))
+        updated = store.update_task(task_id, updates)
+    except ValueError as err:
+        conn.send_error(msg["id"], "invalid_task", str(err))
+        return
+    except RuntimeError as err:
+        conn.send_error(msg["id"], "update_failed", str(err))
+        return
+    conn.send_result(msg["id"], {"success": True, **updated})
 
 
 @callback
@@ -177,16 +139,18 @@ def websocket_complete_task(
     msg: dict[str, Any],
 ) -> None:
     """Mark a task as completed."""
-    store = hass.data.get(DOMAIN, {}).get("store")
+    store = _store_or_error(hass, conn, msg)
     if not store:
-        conn.send_error(msg["id"], "not_loaded", "Integration not loaded")
         return
-    task_id = msg["task_id"]
+    task_id = _resolve_or_error(store, conn, msg)
+    if not task_id:
+        return
     try:
         store.update_last_performed(task_id)
-        conn.send_result(msg["id"], {"success": True})
-    except RuntimeError as e:
-        conn.send_error(msg["id"], "complete_failed", str(e))
+    except RuntimeError as err:
+        conn.send_error(msg["id"], "complete_failed", str(err))
+        return
+    conn.send_result(msg["id"], {"success": True, **store.mutation_result(task_id)})
 
 
 @callback
@@ -196,16 +160,18 @@ def websocket_remove_task(
     msg: dict[str, Any],
 ) -> None:
     """Remove a task."""
-    store = hass.data.get(DOMAIN, {}).get("store")
+    store = _store_or_error(hass, conn, msg)
     if not store:
-        conn.send_error(msg["id"], "not_loaded", "Integration not loaded")
         return
-    task_id = msg["task_id"]
+    task_id = _resolve_or_error(store, conn, msg)
+    if not task_id:
+        return
     try:
-        store.delete(task_id)
-        conn.send_result(msg["id"], {"success": True})
-    except RuntimeError as e:
-        conn.send_error(msg["id"], "remove_failed", str(e))
+        removed = store.delete(task_id)
+    except RuntimeError as err:
+        conn.send_error(msg["id"], "remove_failed", str(err))
+        return
+    conn.send_result(msg["id"], {"success": True, **removed})
 
 
 @callback
@@ -215,18 +181,20 @@ def websocket_snooze_task(
     msg: dict[str, Any],
 ) -> None:
     """Snooze or disable a task."""
-    store = hass.data.get(DOMAIN, {}).get("store")
+    store = _store_or_error(hass, conn, msg)
     if not store:
-        conn.send_error(msg["id"], "not_loaded", "Integration not loaded")
         return
-    task_id = msg["task_id"]
+    task_id = _resolve_or_error(store, conn, msg)
+    if not task_id:
+        return
     snooze_until = msg.get("snooze_until")
     disable = msg.get("disable", False)
     try:
         store.snooze_task(task_id, snooze_until=snooze_until, disable=disable)
-        conn.send_result(msg["id"], {"success": True})
-    except RuntimeError as e:
-        conn.send_error(msg["id"], "snooze_failed", str(e))
+    except RuntimeError as err:
+        conn.send_error(msg["id"], "snooze_failed", str(err))
+        return
+    conn.send_result(msg["id"], {"success": True, **store.mutation_result(task_id)})
 
 
 @callback
@@ -236,16 +204,18 @@ def websocket_increment_counter(
     msg: dict[str, Any],
 ) -> None:
     """Increment the counter for a frequency-based task."""
-    store = hass.data.get(DOMAIN, {}).get("store")
+    store = _store_or_error(hass, conn, msg)
     if not store:
-        conn.send_error(msg["id"], "not_loaded", "Integration not loaded")
         return
-    task_id = msg["task_id"]
+    task_id = _resolve_or_error(store, conn, msg)
+    if not task_id:
+        return
     try:
         store.increment_counter(task_id)
-        conn.send_result(msg["id"], {"success": True})
-    except RuntimeError as e:
-        conn.send_error(msg["id"], "increment_failed", str(e))
+    except RuntimeError as err:
+        conn.send_error(msg["id"], "increment_failed", str(err))
+        return
+    conn.send_result(msg["id"], {"success": True, **store.mutation_result(task_id)})
 
 
 @callback
@@ -255,16 +225,18 @@ def websocket_enable_task(
     msg: dict[str, Any],
 ) -> None:
     """Re-enable a snoozed or disabled task."""
-    store = hass.data.get(DOMAIN, {}).get("store")
+    store = _store_or_error(hass, conn, msg)
     if not store:
-        conn.send_error(msg["id"], "not_loaded", "Integration not loaded")
         return
-    task_id = msg["task_id"]
+    task_id = _resolve_or_error(store, conn, msg)
+    if not task_id:
+        return
     try:
         store.enable_task(task_id)
-        conn.send_result(msg["id"], {"success": True})
-    except RuntimeError as e:
-        conn.send_error(msg["id"], "enable_failed", str(e))
+    except RuntimeError as err:
+        conn.send_error(msg["id"], "enable_failed", str(err))
+        return
+    conn.send_result(msg["id"], {"success": True, **store.mutation_result(task_id)})
 
 
 @callback
@@ -344,7 +316,8 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
         messages.BASE_COMMAND_MESSAGE_SCHEMA.extend(
             {
                 vol.Required("type"): "upkeep/update_task",
-                vol.Required("task_id"): str,
+                vol.Optional("task_id"): str,
+                vol.Optional("entity_id"): str,
                 vol.Required("updates"): dict,
             }
         ),
@@ -356,7 +329,8 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
         messages.BASE_COMMAND_MESSAGE_SCHEMA.extend(
             {
                 vol.Required("type"): "upkeep/complete_task",
-                vol.Required("task_id"): str,
+                vol.Optional("task_id"): str,
+                vol.Optional("entity_id"): str,
             }
         ),
     )
@@ -367,7 +341,8 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
         messages.BASE_COMMAND_MESSAGE_SCHEMA.extend(
             {
                 vol.Required("type"): "upkeep/remove_task",
-                vol.Required("task_id"): str,
+                vol.Optional("task_id"): str,
+                vol.Optional("entity_id"): str,
             }
         ),
     )
@@ -378,7 +353,8 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
         messages.BASE_COMMAND_MESSAGE_SCHEMA.extend(
             {
                 vol.Required("type"): "upkeep/snooze_task",
-                vol.Required("task_id"): str,
+                vol.Optional("task_id"): str,
+                vol.Optional("entity_id"): str,
                 vol.Optional("snooze_until"): str,
                 vol.Optional("disable", default=False): bool,
             }
@@ -391,7 +367,8 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
         messages.BASE_COMMAND_MESSAGE_SCHEMA.extend(
             {
                 vol.Required("type"): "upkeep/increment_counter",
-                vol.Required("task_id"): str,
+                vol.Optional("task_id"): str,
+                vol.Optional("entity_id"): str,
             }
         ),
     )
@@ -402,7 +379,8 @@ async def async_register_websockets(hass: HomeAssistant) -> None:
         messages.BASE_COMMAND_MESSAGE_SCHEMA.extend(
             {
                 vol.Required("type"): "upkeep/enable_task",
-                vol.Required("task_id"): str,
+                vol.Optional("task_id"): str,
+                vol.Optional("entity_id"): str,
             }
         ),
     )

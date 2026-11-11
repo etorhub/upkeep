@@ -1,5 +1,6 @@
 """Store Upkeep configuration."""
 
+import inspect
 import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -144,8 +145,60 @@ class TaskStore:
         """Get tasks by tag id."""
         return [t.to_dict() for t in self._tasks.values() if t.tag_id == tag_id]
 
-    def add(self, task: UpkeepTask, labels: list[str] | None = None) -> str | None:
-        """Add new task."""
+    def entity_id_for(self, task_id: str) -> str | None:
+        """Return the entity id for a task, once Home Assistant has assigned one."""
+        entities = self.hass.data.get(const.DOMAIN, {}).get("entities", {})
+        entity = entities.get(task_id)
+        entity_id = getattr(entity, "entity_id", None) if entity is not None else None
+        if entity_id:
+            return entity_id
+        registry = entity_registry.async_get(self.hass)
+        for entry in registry.entities.values():
+            if entry.unique_id == task_id and entry.platform == const.DOMAIN:
+                return entry.entity_id
+        return None
+
+    def mutation_result(self, task_id: str) -> dict:
+        """Return the ids and stored task after a create or update."""
+        task = self.get(task_id)
+        entity_id = self.entity_id_for(task_id)
+        if task is not None:
+            task = {**task, "entity_id": entity_id}
+        return {"task_id": task_id, "entity_id": entity_id, "task": task}
+
+    def resolve_task_id(
+        self, *, entity_id: str | None = None, task_id: str | None = None
+    ) -> str:
+        """Resolve a service or websocket target to a stored task id."""
+        if not entity_id and not task_id:
+            raise RuntimeError("entity_id or task_id is required")
+
+        resolved_from_entity = None
+        if entity_id:
+            registry = entity_registry.async_get(self.hass)
+            entry = registry.async_get(entity_id)
+            if (
+                entry is None
+                or entry.platform != const.DOMAIN
+                or entry.unique_id not in self._tasks
+            ):
+                raise RuntimeError(f"No Upkeep task found for {entity_id}")
+            resolved_from_entity = entry.unique_id
+
+        if task_id:
+            if task_id not in self._tasks:
+                raise RuntimeError(f"No Upkeep task found for {task_id}")
+            if resolved_from_entity and resolved_from_entity != task_id:
+                raise RuntimeError("entity_id and task_id refer to different tasks")
+            return task_id
+        if resolved_from_entity is None:
+            raise RuntimeError("entity_id or task_id is required")
+        return resolved_from_entity
+
+    async def async_add(
+        self, task: UpkeepTask, labels: list[str] | None = None
+    ) -> dict:
+        """Add a new task and return its ids once the entity exists."""
         add_entities = self.hass.data[const.DOMAIN].get("add_entities")
         if not add_entities:
             raise RuntimeError("add_entities not registered yet.")
@@ -153,17 +206,20 @@ class TaskStore:
         if not device_id:
             raise RuntimeError("Device ID not available.")
 
-        entity = UpkeepSensor(
-            self.hass, task.to_dict(), device_id, labels=labels
-        )
-        add_entities([entity])
+        entity = UpkeepSensor(self.hass, task.to_dict(), device_id, labels=labels)
+        added = add_entities([entity])
+        if inspect.isawaitable(added):
+            await added
         self._tasks[task.id] = task
         self.hass.data[const.DOMAIN]["entities"][task.id] = entity
+        if not getattr(entity, "entity_id", None):
+            await self.hass.async_block_till_done()
         self._save()
-        return task.id
+        return self.mutation_result(task.id)
 
-    def delete(self, task_id: str) -> None:
+    def delete(self, task_id: str) -> dict:
         """Remove a task."""
+        entity_id = self.entity_id_for(task_id)
         er = entity_registry.async_get(self.hass)
         entity_entry = next(
             (
@@ -179,9 +235,11 @@ class TaskStore:
         self._dismiss_notifications(task_id)
         er.async_remove(entity_entry.entity_id)
         del self._tasks[task_id]
+        self.hass.data[const.DOMAIN]["entities"].pop(task_id, None)
         self._save()
+        return {"task_id": task_id, "entity_id": entity_id or entity_entry.entity_id}
 
-    def update_task(self, task_id: str, updated: dict) -> None:
+    def update_task(self, task_id: str, updated: dict) -> dict:
         """Update an existing task with new values from a dictionary."""
         entity = self.hass.data[const.DOMAIN]["entities"].get(task_id)
         task = self._tasks.get(task_id)
@@ -189,9 +247,16 @@ class TaskStore:
         if entity is None or task is None:
             raise RuntimeError("Task not found.")
 
+        allowed = set(task.__dataclass_fields__) - {"id"}
+        allowed.add("labels")
+        unknown = sorted(set(updated) - allowed)
+        if unknown:
+            raise RuntimeError(f"Unknown task fields: {', '.join(unknown)}")
+
         for key, value in updated.items():
-            if hasattr(task, key):
-                setattr(task, key, value)
+            if key == "labels":
+                continue
+            setattr(task, key, value)
             entity.task[key] = value
 
         if "labels" in updated:
@@ -209,6 +274,7 @@ class TaskStore:
 
         entity.async_schedule_update_ha_state(force_refresh=True)
         self._save()
+        return self.mutation_result(task_id)
 
     def complete_task(
         self, task_id: str, performed_date: datetime | None = None

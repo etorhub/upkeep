@@ -42,6 +42,7 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 ## Features
 
 ### Integration (Backend)
+
 - **Task management** — Create recurring tasks (every N days/weeks/months) or frequency-based tasks (after N usages).
 - **Sidebar panel** — Manage tasks from the sidebar: add, edit, complete, snooze.
 - **Binary sensors** — Each task creates a `binary_sensor` entity for automations and dashboards.
@@ -49,8 +50,10 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 - **Entity watching** — Auto-increment frequency tasks when a watched entity changes state.
 - **Events** — Fires `upkeep_task_due` when tasks become due; optional persistent notifications.
 - **Snooze** — Disable tasks temporarily or until a specific date.
+- **Services** — Create, update, and delete tasks from automations or an agent. See [Services](#services).
 
 ### Lovelace Card
+
 - **Auto-discovery** — Automatically finds all Upkeep entities.
 - **Progress visualization** — Circular progress ring or horizontal bar.
 - **Color-coded urgency** — Green (on track), yellow (due soon), red (overdue), gray (snoozed).
@@ -169,19 +172,67 @@ columns: 3
 
 ### Configuration options
 
-| Option             | Type     | Default           | Description                                 |
-| ------------------ | -------- | ----------------- | ------------------------------------------- |
-| `title`            | string   | _(none)_          | Card title displayed at the top             |
-| `entities`         | string[] | _(auto-discover)_ | Manual list of entity IDs                   |
-| `exclude_entities` | string[] | `[]`              | Entity IDs to exclude from auto-discovery   |
-| `view_mode`        | string   | `grid`            | `grid`, `list`, or `compact`                |
-| `progress_type`    | string   | `ring`            | `ring` (circular) or `bar` (horizontal)     |
-| `sort_by`          | string   | `urgency`         | `urgency`, `name`, or `due_date`            |
+| Option             | Type     | Default           | Description                                            |
+| ------------------ | -------- | ----------------- | ------------------------------------------------------ |
+| `title`            | string   | _(none)_          | Card title displayed at the top                        |
+| `entities`         | string[] | _(auto-discover)_ | Manual list of entity IDs                              |
+| `exclude_entities` | string[] | `[]`              | Entity IDs to exclude from auto-discovery              |
+| `view_mode`        | string   | `grid`            | `grid`, `list`, or `compact`                           |
+| `progress_type`    | string   | `ring`            | `ring` (circular) or `bar` (horizontal)                |
+| `sort_by`          | string   | `urgency`         | `urgency`, `name`, or `due_date`                       |
 | `filter`           | string   | `all`             | `all`, `overdue`, `due_soon`, `on_track`, or `snoozed` |
-| `due_soon_days`    | number   | `7`               | Days threshold for "due soon" status        |
-| `show_header`      | boolean  | `true`            | Show the summary header with status counts  |
-| `show_filter_bar`  | boolean  | `false`           | Show interactive filter chips               |
-| `columns`          | number   | `3`               | Number of grid columns (grid mode only)     |
+| `due_soon_days`    | number   | `7`               | Days threshold for "due soon" status                   |
+| `show_header`      | boolean  | `true`            | Show the summary header with status counts             |
+| `show_filter_bar`  | boolean  | `false`           | Show interactive filter chips                          |
+| `columns`          | number   | `3`               | Number of grid columns (grid mode only)                |
+
+### Services
+
+Each task is a `binary_sensor`. Address it by `entity_id` (`binary_sensor.change_hvac_filter`) or by `task_id` (the entity's unique id, also the `task_id` state attribute, such as `upkeep_0123456789abcdef`). Create, update, and delete need one of those ids except `add_task`, which creates the id.
+
+`add_task`, `update_task`, and `remove_task` return a response when the caller asks for one:
+
+```json
+{
+  "success": true,
+  "task_id": "upkeep_0123456789abcdef",
+  "entity_id": "binary_sensor.change_hvac_filter",
+  "task": { "title": "Change HVAC filter", "interval_value": 90 }
+}
+```
+
+`remove_task` returns `task_id` and `entity_id` only. A missing task raises an error. Unknown update fields are rejected.
+
+Create a task:
+
+```yaml
+action: upkeep.add_task
+data:
+  title: Change HVAC filter
+  interval_value: 90
+  interval_type: days
+```
+
+Update it by entity id, or pass `task_id` instead:
+
+```yaml
+action: upkeep.update_task
+data:
+  entity_id: binary_sensor.change_hvac_filter
+  interval_value: 60
+```
+
+Delete it:
+
+```yaml
+action: upkeep.remove_task
+data:
+  task_id: upkeep_0123456789abcdef
+```
+
+`complete_task`, `reset_last_performed`, `snooze_task`, `enable_task`, and `increment_counter` take the same identifiers.
+
+Home Assistant MCP can manage these tasks with `ha_call_service` (`return_response: true`) on `upkeep.add_task`, `upkeep.update_task`, and `upkeep.remove_task`. Read the current interval, due date, counter, and `task_id` with `ha_get_state`. Calendar and todo tools do not manage Upkeep tasks. Read-only mode can read sensor state and cannot change tasks.
 
 ---
 
@@ -203,25 +254,25 @@ npx lefthook install
 
 ### Commands
 
-| Command                   | Description                                    |
-| ------------------------- | ---------------------------------------------- |
-| `npm run dev:up`          | Build, then start Home Assistant on `:8124` with this integration mounted |
-| `npm run dev:watch`       | Rebuild the card and panel into the mounted component |
-| `npm run dev:restart`     | Restart Home Assistant after Python edits |
-| `npm run dev:logs`        | Follow the Home Assistant container logs |
-| `npm run dev:down`        | Stop the Home Assistant container |
-| `npm start`               | Card-only dev server on `:5000`; does not load the integration |
-| `npm run build`           | Build card + panel into `dist/` and `custom_components/upkeep/` |
-| `npm run package:integration` | Create `upkeep.zip` for release packaging (CI) |
-| `npm run lint`            | Run ESLint                                     |
-| `npm run lint:fix`        | ESLint with auto-fix                           |
-| `npm run format`          | Prettier format                                |
-| `npm run format:check`    | Prettier check                                 |
-| `npm run typecheck`       | TypeScript check                               |
-| `npm run check:i18n`      | Check translation catalogs are complete        |
-| `npm run test`            | Run Vitest tests                               |
-| `npm run test:watch`      | Vitest watch mode                              |
-| `npm run commit`          | Interactive commit wizard (Commitizen)         |
+| Command                       | Description                                                               |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| `npm run dev:up`              | Build, then start Home Assistant on `:8124` with this integration mounted |
+| `npm run dev:watch`           | Rebuild the card and panel into the mounted component                     |
+| `npm run dev:restart`         | Restart Home Assistant after Python edits                                 |
+| `npm run dev:logs`            | Follow the Home Assistant container logs                                  |
+| `npm run dev:down`            | Stop the Home Assistant container                                         |
+| `npm start`                   | Card-only dev server on `:5000`; does not load the integration            |
+| `npm run build`               | Build card + panel into `dist/` and `custom_components/upkeep/`           |
+| `npm run package:integration` | Create `upkeep.zip` for release packaging (CI)                            |
+| `npm run lint`                | Run ESLint                                                                |
+| `npm run lint:fix`            | ESLint with auto-fix                                                      |
+| `npm run format`              | Prettier format                                                           |
+| `npm run format:check`        | Prettier check                                                            |
+| `npm run typecheck`           | TypeScript check                                                          |
+| `npm run check:i18n`          | Check translation catalogs are complete                                   |
+| `npm run test`                | Run Vitest tests                                                          |
+| `npm run test:watch`          | Vitest watch mode                                                         |
+| `npm run commit`              | Interactive commit wizard (Commitizen)                                    |
 
 ### Local Testing in Home Assistant
 

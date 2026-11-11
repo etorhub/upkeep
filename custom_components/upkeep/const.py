@@ -5,6 +5,16 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import TimeSelector
 
+from .schemas import (
+    ADD_TASK_SERVICE_SCHEMA,
+    COMPLETE_TASK_SCHEMA,
+    ENABLE_TASK_SCHEMA,
+    INCREMENT_COUNTER_SCHEMA,
+    REMOVE_TASK_SCHEMA,
+    SNOOZE_TASK_SCHEMA,
+    UPDATE_TASK_SERVICE_SCHEMA,
+)
+
 VERSION = "1.0.0"
 NAME = "Upkeep"
 MANUFACTURER = "@etorhub"
@@ -41,38 +51,22 @@ COORDINATOR_UPDATE_INTERVAL = 300  # 5 minutes
 DEFAULT_NOTIFY_TIME = "08:00"
 
 # Services
+SERVICE_ADD_TASK = "add_task"
+SERVICE_UPDATE_TASK = "update_task"
+SERVICE_REMOVE_TASK = "remove_task"
 SERVICE_COMPLETE_TASK = "complete_task"
 SERVICE_RESET_LAST_PERFORMED = "reset_last_performed"  # Alias for backward compat
 SERVICE_INCREMENT_COUNTER = "increment_counter"
 SERVICE_SNOOZE_TASK = "snooze_task"
 SERVICE_ENABLE_TASK = "enable_task"
 
-SERVICE_COMPLETE_TASK_SCHEMA = vol.Schema(
-    {
-        vol.Required("entity_id"): cv.entity_id,
-        vol.Optional("performed_date"): cv.string,
-    }
-)
-
-SERVICE_INCREMENT_COUNTER_SCHEMA = vol.Schema(
-    {
-        vol.Required("entity_id"): cv.entity_id,
-    }
-)
-
-SERVICE_SNOOZE_TASK_SCHEMA = vol.Schema(
-    {
-        vol.Required("entity_id"): cv.entity_id,
-        vol.Optional("snooze_until"): cv.string,
-        vol.Optional("disable"): cv.boolean,
-    }
-)
-
-SERVICE_ENABLE_TASK_SCHEMA = vol.Schema(
-    {
-        vol.Required("entity_id"): cv.entity_id,
-    }
-)
+SERVICE_ADD_TASK_SCHEMA = ADD_TASK_SERVICE_SCHEMA
+SERVICE_UPDATE_TASK_SCHEMA = UPDATE_TASK_SERVICE_SCHEMA
+SERVICE_REMOVE_TASK_SCHEMA = REMOVE_TASK_SCHEMA
+SERVICE_COMPLETE_TASK_SCHEMA = COMPLETE_TASK_SCHEMA
+SERVICE_INCREMENT_COUNTER_SCHEMA = INCREMENT_COUNTER_SCHEMA
+SERVICE_SNOOZE_TASK_SCHEMA = SNOOZE_TASK_SCHEMA
+SERVICE_ENABLE_TASK_SCHEMA = ENABLE_TASK_SCHEMA
 
 CONFIG_STEP_USER_DATA_SCHEMA = vol.Schema(
     {
