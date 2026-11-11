@@ -1,4 +1,13 @@
 import type { Task } from './types';
+import {
+  addPlainInterval,
+  calendarDaysUntil,
+  plainDateFrom,
+  plainDateToDate,
+  subtractPlainInterval,
+  systemTimeZone,
+  type PlainDate,
+} from '../src/calendar';
 
 export type PanelTaskUrgency = 'on_track' | 'due_soon' | 'overdue' | 'snoozed' | 'unknown';
 
@@ -8,26 +17,35 @@ export interface PanelTaskStatus {
   progress: number;
 }
 
-function midnight(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+function zoneOf(timeZone?: string): string {
+  return timeZone || systemTimeZone();
 }
 
-export function addInterval(last: Date, intervalValue: number, intervalType: string): Date {
-  const due = new Date(last);
-  if (intervalType === 'weeks') {
-    due.setDate(due.getDate() + intervalValue * 7);
-  } else if (intervalType === 'months') {
-    due.setMonth(due.getMonth() + intervalValue);
-  } else {
-    due.setDate(due.getDate() + intervalValue);
+function asPlain(value: string | Date, timeZone: string): PlainDate | null {
+  try {
+    return plainDateFrom(value, timeZone);
+  } catch {
+    return null;
   }
-  return due;
+}
+
+export function addInterval(
+  last: Date,
+  intervalValue: number,
+  intervalType: string,
+  timeZone?: string
+): Date {
+  const zone = zoneOf(timeZone);
+  const start = asPlain(last, zone);
+  if (!start) return last;
+  return plainDateToDate(addPlainInterval(start, intervalValue, intervalType), zone);
 }
 
 export function computePanelTaskStatus(
   task: Task,
   dueSoonDays = 7,
-  now: Date = new Date()
+  now: Date = new Date(),
+  timeZone?: string
 ): PanelTaskStatus {
   if (!task.enabled) {
     return { urgency: 'snoozed', days_remaining: 0, progress: 0 };
@@ -67,7 +85,13 @@ export function computePanelTaskStatus(
     return { urgency: 'overdue', days_remaining: 0, progress: 100 };
   }
 
-  const last = midnight(new Date(lastStr));
+  const zone = zoneOf(timeZone);
+  const last = asPlain(lastStr, zone);
+  const today = asPlain(now, zone);
+  if (!last || !today) {
+    return { urgency: 'overdue', days_remaining: 0, progress: 100 };
+  }
+
   const intervalValue =
     trigger?.type === 'interval'
       ? (trigger.every ?? task.interval_value ?? 30)
@@ -76,13 +100,11 @@ export function computePanelTaskStatus(
     trigger?.type === 'interval'
       ? (trigger.unit ?? task.interval_type ?? 'days')
       : (task.interval_type ?? 'days');
-  const due = midnight(addInterval(last, intervalValue, intervalType));
-  const nowMid = midnight(now);
-
-  const totalMs = due.getTime() - last.getTime();
-  const elapsedMs = nowMid.getTime() - last.getTime();
-  const progress = totalMs > 0 ? Math.min(100, Math.round((elapsedMs / totalMs) * 100)) : 100;
-  const daysRemaining = Math.floor((due.getTime() - nowMid.getTime()) / (1000 * 60 * 60 * 24));
+  const due = addPlainInterval(last, intervalValue, intervalType);
+  const totalDays = Math.max(1, calendarDaysUntil(last, due));
+  const elapsedDays = calendarDaysUntil(last, today);
+  const progress = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)));
+  const daysRemaining = calendarDaysUntil(today, due);
 
   let urgency: PanelTaskUrgency;
   if (progress >= 100 || daysRemaining < 0) {
@@ -96,16 +118,11 @@ export function computePanelTaskStatus(
   return { urgency, days_remaining: daysRemaining, progress };
 }
 
-export function subtractInterval(due: Date, value: number, unit: string): Date {
-  const start = new Date(due);
-  if (unit === 'weeks') {
-    start.setDate(start.getDate() - value * 7);
-  } else if (unit === 'months') {
-    start.setMonth(start.getMonth() - value);
-  } else {
-    start.setDate(start.getDate() - value);
-  }
-  return start;
+export function subtractInterval(due: Date, value: number, unit: string, timeZone?: string): Date {
+  const zone = zoneOf(timeZone);
+  const start = asPlain(due, zone);
+  if (!start) return due;
+  return plainDateToDate(subtractPlainInterval(start, value, unit), zone);
 }
 
 /** A lead that reaches the completion date would notify the morning after the task is done. */
@@ -114,18 +131,29 @@ export function advanceNoticeSkipped(
   intervalValue: number,
   intervalType: string,
   leadValue: number,
-  leadUnit: string
+  leadUnit: string,
+  timeZone?: string
 ): boolean {
-  const last = midnight(lastPerformed);
-  const due = midnight(addInterval(last, intervalValue, intervalType));
-  const windowStart = midnight(subtractInterval(due, leadValue, leadUnit));
-  return windowStart.getTime() <= last.getTime();
+  const zone = zoneOf(timeZone);
+  const last = asPlain(lastPerformed, zone);
+  if (!last) return false;
+  const due = addPlainInterval(last, intervalValue, intervalType);
+  const windowStart = subtractPlainInterval(due, leadValue, leadUnit);
+  return TemporalCompare(windowStart, last) <= 0;
+}
+
+function TemporalCompare(left: PlainDate, right: PlainDate): number {
+  return calendarDaysUntil(right, left);
 }
 
 export function scheduledDueDate(
   lastPerformed: Date,
   intervalValue: number,
-  intervalType: string
+  intervalType: string,
+  timeZone?: string
 ): Date {
-  return midnight(addInterval(midnight(lastPerformed), intervalValue, intervalType));
+  const zone = zoneOf(timeZone);
+  const last = asPlain(lastPerformed, zone);
+  if (!last) return lastPerformed;
+  return plainDateToDate(addPlainInterval(last, intervalValue, intervalType), zone);
 }
