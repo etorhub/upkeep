@@ -1,11 +1,12 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { safeCustomElement } from './define';
+import { property, state } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
 import { HomeMaintenanceCardConfig } from './types';
 import { CARD_EDITOR_NAME, DEFAULTS } from './const';
 import { localize } from './localize/localize';
 
-@customElement(CARD_EDITOR_NAME)
+@safeCustomElement(CARD_EDITOR_NAME)
 export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config?: HomeMaintenanceCardConfig;

@@ -1,11 +1,12 @@
 import { LitElement, html, css, TemplateResult, CSSResultGroup } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { safeCustomElement } from '../define';
+import { property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { TaskData } from '../types';
 import { URGENCY_COLORS } from '../const';
 import { localize } from '../localize/localize';
 
-@customElement('hm-summary-header')
+@safeCustomElement('upkeep-summary-header')
 export class SummaryHeader extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) tasks: TaskData[] = [];

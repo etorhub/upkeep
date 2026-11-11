@@ -1,5 +1,6 @@
 import { LitElement, html, TemplateResult, PropertyValues, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { safeCustomElement } from './define';
+import { property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 
 import type { HomeMaintenanceCardConfig, TaskData } from './types';
@@ -31,7 +32,7 @@ interface WindowWithCustomCards extends Window {
   preview: true,
 });
 
-@customElement(CARD_NAME)
+@safeCustomElement(CARD_NAME)
 export class HomeMaintenanceCard extends LitElement {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import('./editor');
@@ -264,12 +265,12 @@ export class HomeMaintenanceCard extends LitElement {
       <div class="${containerClass}" style="${style}">
         ${tasks.map(
           (task) => html`
-            <hm-task-tile
+            <upkeep-task-tile
               .hass=${this.hass}
               .task=${task}
               .progressType=${progressType}
               .viewMode=${viewMode}
-            ></hm-task-tile>
+            ></upkeep-task-tile>
           `
         )}
       </div>

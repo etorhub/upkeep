@@ -1,5 +1,6 @@
 import { LitElement, html, css, svg, TemplateResult, CSSResultGroup, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { safeCustomElement } from '../define';
+import { property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { TaskData } from '../types';
 import { getUrgencyColor, formatDaysRemaining } from '../utils';
@@ -7,7 +8,7 @@ import { formatPart } from '../status-format';
 import { localize } from '../localize/localize';
 import './progress-ring';
 
-@customElement('hm-task-tile')
+@safeCustomElement('upkeep-task-tile')
 export class TaskTile extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ attribute: false }) task!: TaskData;
@@ -276,12 +277,12 @@ export class TaskTile extends LitElement {
       `;
     }
     return html`
-      <hm-progress-ring
+      <upkeep-progress-ring
         .progress=${this.task.progress}
         .color=${color}
         .size=${size}
         .strokeWidth=${stroke}
-      ></hm-progress-ring>
+      ></upkeep-progress-ring>
     `;
   }
 
