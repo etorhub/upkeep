@@ -1,7 +1,8 @@
 import { LitElement, html, css, svg, TemplateResult, CSSResultGroup } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { safeCustomElement } from '../define';
+import { property } from 'lit/decorators.js';
 
-@customElement('hm-progress-ring')
+@safeCustomElement('upkeep-progress-ring')
 export class ProgressRing extends LitElement {
   @property({ type: Number }) progress = 0;
   @property({ type: String }) color = 'var(--primary-color)';
