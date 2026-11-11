@@ -45,7 +45,7 @@
   "services": {
     "reset_last_performed": {
       "name": "Repor a última execução",
-      "description": "Repõe a data da última execução de uma tarefa de manutenção. Nome alternativo de complete_task para compatibilidade.",
+      "description": "Alternativa de Concluir tarefa. A data aplica-se a intervalos e ao calendário.",
       "fields": {
         "entity_id": {
           "name": "ID da entidade",
@@ -53,13 +53,13 @@
         },
         "performed_date": {
           "name": "Data de execução",
-          "description": "Indique opcionalmente a data em que a tarefa foi executada pela última vez."
+          "description": "Data em que a tarefa foi feita. Usada por intervalos e pelo calendário."
         }
       }
     },
     "complete_task": {
       "name": "Concluir tarefa",
-      "description": "Marca uma tarefa de manutenção como concluída (repõe a data da última execução).",
+      "description": "Marca uma tarefa como feita. O que é reposto depende do aviso. A data aplica-se a intervalos e ao calendário.",
       "fields": {
         "entity_id": {
           "name": "ID da entidade",
@@ -67,7 +67,7 @@
         },
         "performed_date": {
           "name": "Data de execução",
-          "description": "Indique opcionalmente a data em que a tarefa foi executada pela última vez."
+          "description": "Data em que a tarefa foi feita. Usada por intervalos e pelo calendário."
         }
       }
     },
@@ -101,7 +101,7 @@
     },
     "increment_counter": {
       "name": "Incrementar contador",
-      "description": "Incrementa o contador de utilização de uma tarefa baseada na frequência (por exemplo, lavagens da máquina de lavar loiça).",
+      "description": "Soma um a uma tarefa de contagem. Os outros avisos ignoram isto.",
       "fields": {
         "entity_id": {
           "name": "ID da entidade",
@@ -109,5 +109,11 @@
         }
       }
     }
+  },
+  "notices": {
+    "title": "Upkeep",
+    "due": "{title} está para fazer",
+    "before": "{title} está a chegar",
+    "reset_failed": "O Upkeep não conseguiu repor o contador de vida de {title}"
   }
 }

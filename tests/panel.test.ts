@@ -64,7 +64,7 @@ describe('upkeep-panel add form', () => {
       Array.from(el.shadowRoot!.querySelectorAll('.filter-chip')).map((node) =>
         node.textContent?.trim()
       )
-    ).toEqual(['Totes 0', 'Vençudes 0', 'Properes 0', 'Al dia 0', 'Ajornades 0']);
+    ).toEqual(['Totes 0', 'Vençudes 0', 'Properes 0', 'Al dia 0', 'Desconegudes 0', 'Ajornades 0']);
   });
 
   it('renders period input as native select', async () => {
@@ -104,7 +104,7 @@ describe('upkeep-panel add form', () => {
       Array.from(el.shadowRoot!.querySelectorAll('.filter-chip')).map((node) =>
         node.textContent?.trim()
       )
-    ).toEqual(['All 0', 'Overdue 0', 'Due soon 0', 'On track 0', 'Snoozed 0']);
+    ).toEqual(['All 0', 'Overdue 0', 'Due soon 0', 'On track 0', 'Unknown 0', 'Snoozed 0']);
 
     (el as any)._formMode = 'add';
     await (el as any).updateComplete;
@@ -113,7 +113,7 @@ describe('upkeep-panel add form', () => {
     const formButtons = Array.from(el.shadowRoot!.querySelectorAll('.task-form button'))
       .map((node) => node.textContent?.trim())
       .filter(Boolean);
-    expect(formButtons).toEqual(['Cancel', 'Add Task']);
+    expect(formButtons).toEqual(['Time interval', 'Cancel', 'Add Task']);
   });
 
   it('disables submit until the title is filled', async () => {
@@ -831,5 +831,47 @@ describe('upkeep-panel task actions', () => {
     expect(sheet).toContain('Snooze');
     expect(sheet).toContain('Edit');
     expect(sheet).toContain('Delete');
+  });
+
+  it('shows the published status and keeps Done disabled while watching', async () => {
+    const task: MockTask = {
+      id: 'kettle',
+      title: 'Descale kettle',
+      task_type: 'usage',
+      interval_value: 0,
+      interval_type: 'days',
+      enabled: true,
+      entity_id: 'binary_sensor.descale_kettle',
+    };
+    const hass = {
+      states: {
+        'binary_sensor.descale_kettle': {
+          entity_id: 'binary_sensor.descale_kettle',
+          state: 'off',
+          attributes: {
+            urgency: 'on_track',
+            progress: 0,
+            status_key: 'status.watching',
+            rule_key: 'rule.usage',
+            rule_vars: { threshold: 100, unit: 'L', entity_id: 'sensor.kettle' },
+            done_enabled: false,
+          },
+        },
+      },
+      connection: {
+        sendMessagePromise: async (msg: { type: string }) => {
+          if (msg.type === 'upkeep/get_tasks') return [task];
+          return undefined;
+        },
+      },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('.task-meta')?.textContent?.trim()).toBe('Watching');
+    expect(el.shadowRoot?.querySelector('.task-schedule')?.textContent).toContain('sensor.kettle');
+    const done = el.shadowRoot?.querySelector('.btn-complete') as HTMLButtonElement;
+    expect(done.disabled).toBe(true);
   });
 });

@@ -6,7 +6,16 @@ import {
   PROGRESS_THRESHOLDS,
 } from './const';
 import { localize } from './localize/localize';
-import { TaskData } from './types';
+import { TaskData, TaskUrgency } from './types';
+
+const DATE_TRIGGERS = new Set(['interval', 'calendar', 'idle']);
+const URGENCY_RANK: Record<TaskUrgency, number> = {
+  overdue: 0,
+  due_soon: 1,
+  on_track: 2,
+  unknown: 3,
+  snoozed: 4,
+};
 
 export function isMaintenanceEntity(stateObj: HassEntity): boolean {
   if (!stateObj.entity_id.startsWith('binary_sensor.')) return false;
@@ -44,6 +53,10 @@ export function buildTaskData(
   const attrs = stateObj.attributes || {};
   const taskType = attrs.task_type as string | undefined;
   const enabled = attrs.enabled !== false;
+
+  if (attrs.upkeep_schema === 2 || typeof attrs.status_key === 'string') {
+    return mapPublishedTask(stateObj, attrs, dueSoonDays, enabled);
+  }
 
   if (!enabled) {
     return {
@@ -146,25 +159,82 @@ export function buildTaskData(
   };
 }
 
+function mapPublishedTask(
+  stateObj: HassEntity,
+  attrs: HassEntity['attributes'],
+  dueSoonDays: number,
+  enabled: boolean
+): TaskData {
+  let urgency = (enabled ? attrs.urgency : 'snoozed') as TaskUrgency;
+  const daysRemaining = typeof attrs.days_remaining === 'number' ? attrs.days_remaining : 0;
+  const trigger = String(attrs.trigger_type || '');
+  if (
+    enabled &&
+    DATE_TRIGGERS.has(trigger) &&
+    (urgency === 'on_track' || urgency === 'due_soon') &&
+    daysRemaining > 0
+  ) {
+    urgency = daysRemaining <= dueSoonDays ? 'due_soon' : 'on_track';
+  }
+  const nextDue = attrs.next_due ? new Date(String(attrs.next_due)) : new Date(0);
+  return {
+    entity_id: stateObj.entity_id,
+    name: attrs.friendly_name ?? stateObj.entity_id,
+    icon: attrs.icon ?? 'mdi:calendar-check',
+    state: stateObj.state,
+    last_performed: attrs.last_performed ? new Date(String(attrs.last_performed)) : new Date(0),
+    next_due: Number.isNaN(nextDue.getTime()) ? new Date(0) : nextDue,
+    interval_value: attrs.interval_value ?? attrs.frequency_target ?? 0,
+    interval_type: attrs.interval_type ?? (trigger === 'cycle' ? 'uses' : 'days'),
+    progress: typeof attrs.progress === 'number' ? attrs.progress : 0,
+    days_remaining: daysRemaining,
+    urgency,
+    task_type: taskTypeOf(attrs),
+    trigger_type: trigger || undefined,
+    status_key: attrs.status_key,
+    status_vars: attrs.status_vars,
+    rule_key: attrs.rule_key,
+    rule_vars: attrs.rule_vars,
+    tag_key: attrs.tag_key ?? null,
+    done_enabled: attrs.done_enabled !== false,
+    meters: Array.isArray(attrs.meters) ? attrs.meters : undefined,
+    assigned_user: attrs.assigned_user,
+  };
+}
+
+function taskTypeOf(attrs: HassEntity['attributes']): string | undefined {
+  return typeof attrs.task_type === 'string' ? attrs.task_type : undefined;
+}
+
 export function sortTasks(tasks: TaskData[], sortBy: 'urgency' | 'name' | 'due_date'): TaskData[] {
   const sorted = [...tasks];
   switch (sortBy) {
     case 'urgency':
-      sorted.sort((a, b) => b.progress - a.progress);
+      sorted.sort((a, b) => {
+        const rank = (URGENCY_RANK[a.urgency] ?? 2) - (URGENCY_RANK[b.urgency] ?? 2);
+        if (rank !== 0) return rank;
+        if (b.progress !== a.progress) return b.progress - a.progress;
+        return a.name.localeCompare(b.name);
+      });
       break;
     case 'name':
       sorted.sort((a, b) => a.name.localeCompare(b.name));
       break;
     case 'due_date':
-      sorted.sort((a, b) => a.next_due.getTime() - b.next_due.getTime());
+      sorted.sort((a, b) => dueTime(a) - dueTime(b) || a.name.localeCompare(b.name));
       break;
   }
   return sorted;
 }
 
+function dueTime(task: TaskData): number {
+  const time = task.next_due?.getTime?.() ?? 0;
+  return !time || Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+}
+
 export function filterTasks(
   tasks: TaskData[],
-  filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed'
+  filter: 'all' | 'overdue' | 'due_soon' | 'on_track' | 'snoozed' | 'unknown'
 ): TaskData[] {
   if (filter === 'all') return tasks;
   return tasks.filter((t) => t.urgency === filter);
@@ -177,6 +247,7 @@ export function getUrgencyColor(urgency: TaskData['urgency']): string {
     case 'due_soon':
       return 'var(--warning-color, #ff9800)';
     case 'snoozed':
+    case 'unknown':
       return 'var(--secondary-text-color, #9e9e9e)';
     case 'on_track':
     default:
@@ -184,11 +255,7 @@ export function getUrgencyColor(urgency: TaskData['urgency']): string {
   }
 }
 
-export function formatDaysRemaining(
-  days: number,
-  locale: string,
-  taskType?: 'time' | 'frequency'
-): string {
+export function formatDaysRemaining(days: number, locale: string, taskType?: string): string {
   if (taskType === 'frequency') {
     if (days <= 0) return localize('card.no_uses_left', undefined, locale);
     if (_isPluralOne(locale, days)) {

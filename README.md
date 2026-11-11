@@ -43,11 +43,11 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 
 ### Integration (Backend)
 
-- **Task management** — Create recurring tasks (every N days/weeks/months) or frequency-based tasks (after N usages).
+- **Task management** — Ten due triggers: time interval, calendar date, cycle count, usage total, after another task, idle time, device-reported life, lasting condition, an event, or whichever of two meters comes first.
 - **Sidebar panel** — Manage tasks from the sidebar: add, edit, complete, snooze.
 - **Binary sensors** — Each task creates a `binary_sensor` entity for automations and dashboards.
 - **NFC support** — Scan a tag to mark a task complete.
-- **Entity watching** — Auto-increment frequency tasks when a watched entity changes state.
+- **Entity watching** — Cycle, usage, idle, device life, condition, and event triggers subscribe while the task exists and catch up after a restart.
 - **Events** — Fires `upkeep_task_due` when tasks become due; optional persistent notifications.
 - **Snooze** — Disable tasks temporarily or until a specific date.
 - **Services** — Create, update, and delete tasks from automations or an agent. See [Services](#services).
@@ -56,7 +56,7 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 
 - **Auto-discovery** — Automatically finds all Upkeep entities.
 - **Progress visualization** — Circular progress ring or horizontal bar.
-- **Color-coded urgency** — Green (on track), yellow (due soon), red (overdue), gray (snoozed).
+- **Color-coded urgency** — Green (on track), yellow (due soon), red (overdue), gray (snoozed or unknown).
 - **One-tap completion** — Mark tasks as done from the card.
 - **Multiple layouts** — Grid, list, or compact views.
 - **Sorting & filtering** — Sort by urgency, name, or due date. Filter by status including snoozed.
@@ -180,8 +180,8 @@ columns: 3
 | `view_mode`        | string   | `grid`            | `grid`, `list`, or `compact`                           |
 | `progress_type`    | string   | `ring`            | `ring` (circular) or `bar` (horizontal)                |
 | `sort_by`          | string   | `urgency`         | `urgency`, `name`, or `due_date`                       |
-| `filter`           | string   | `all`             | `all`, `overdue`, `due_soon`, `on_track`, or `snoozed` |
-| `due_soon_days`    | number   | `7`               | Days threshold for "due soon" status                   |
+| `filter`           | string   | `all`             | `all`, `overdue`, `due_soon`, `on_track`, `unknown`, or `snoozed` |
+| `due_soon_days`    | number   | `7`               | Days before a date-based task counts as due soon       |
 | `show_header`      | boolean  | `true`            | Show the summary header with status counts             |
 | `show_filter_bar`  | boolean  | `false`           | Show interactive filter chips                          |
 | `columns`          | number   | `3`               | Number of grid columns (grid mode only)                |
@@ -230,7 +230,13 @@ data:
   task_id: upkeep_0123456789abcdef
 ```
 
-`complete_task`, `reset_last_performed`, `snooze_task`, `enable_task`, and `increment_counter` take the same identifiers.
+`complete_task`, `reset_last_performed`, `snooze_task`, `enable_task`, and `increment_counter` take the same identifiers. `complete_task` resets whatever the due trigger is counting. `performed_date` applies to time intervals and calendar dates. `increment_counter` adds one cycle and does nothing for other triggers.
+
+### Due triggers
+
+Release 2.0.0 stores tasks in `upkeep.storage` version 1.3. A task keeps its identity and notices, and adds `trigger` (the rule) and `state` (the runtime). Home Assistant does not downgrade storage. Existing time tasks become a time interval and keep `task_type: time`. Existing frequency tasks become a cycle count and keep `task_type: frequency`. New types use the trigger id as `task_type`.
+
+Each binary sensor publishes `upkeep_schema: 2`, `trigger_type`, `urgency`, `progress`, `status_key`, `status_vars`, `rule_key`, and `next_due`. `next_due` is an ISO timestamp or null. Frequency tasks no longer publish an English sentence in `next_due`. The card and panel localize `status_key` themselves. Snooze does not move the due date: the entity shows the progress from the moment it was snoozed, and it is not due until you enable it again.
 
 Home Assistant MCP can manage these tasks with `ha_call_service` (`return_response: true`) on `upkeep.add_task`, `upkeep.update_task`, and `upkeep.remove_task`. Read the current interval, due date, counter, and `task_id` with `ha_get_state`. Calendar and todo tools do not manage Upkeep tasks. Read-only mode can read sensor state and cannot change tasks.
 

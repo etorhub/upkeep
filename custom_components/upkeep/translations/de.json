@@ -45,7 +45,7 @@
   "services": {
     "reset_last_performed": {
       "name": "Letzte Ausführung zurücksetzen",
-      "description": "Setzt das Datum der letzten Ausführung einer Wartungsaufgabe zurück. Alias von complete_task für Abwärtskompatibilität.",
+      "description": "Alias von Aufgabe erledigen. Das Datum gilt für Intervalle und Kalender.",
       "fields": {
         "entity_id": {
           "name": "Entitäts-ID",
@@ -53,13 +53,13 @@
         },
         "performed_date": {
           "name": "Ausführungsdatum",
-          "description": "Optional das Datum der letzten Ausführung angeben."
+          "description": "Datum, an dem die Aufgabe erledigt wurde. Gilt für Intervalle und Kalender."
         }
       }
     },
     "complete_task": {
       "name": "Aufgabe erledigen",
-      "description": "Markiert eine Wartungsaufgabe als erledigt (setzt das Datum der letzten Ausführung zurück).",
+      "description": "Markiere eine Aufgabe als erledigt. Was zurückgesetzt wird, hängt vom Auslöser ab. Das Datum gilt für Intervalle und Kalender.",
       "fields": {
         "entity_id": {
           "name": "Entitäts-ID",
@@ -67,7 +67,7 @@
         },
         "performed_date": {
           "name": "Ausführungsdatum",
-          "description": "Optional das Datum der letzten Ausführung angeben."
+          "description": "Datum, an dem die Aufgabe erledigt wurde. Gilt für Intervalle und Kalender."
         }
       }
     },
@@ -101,7 +101,7 @@
     },
     "increment_counter": {
       "name": "Zähler erhöhen",
-      "description": "Erhöht den Nutzungszähler einer häufigkeitsbasierten Aufgabe (zum Beispiel Spülmaschinengänge).",
+      "description": "Zählt eine Zykluszähler-Aufgabe um eins hoch. Andere Auslöser ignorieren das.",
       "fields": {
         "entity_id": {
           "name": "Entitäts-ID",
@@ -109,5 +109,11 @@
         }
       }
     }
+  },
+  "notices": {
+    "title": "Upkeep",
+    "due": "{title} ist fällig",
+    "before": "{title} steht bald an",
+    "reset_failed": "Upkeep konnte den Lebensdauerzähler für {title} nicht zurücksetzen"
   }
 }

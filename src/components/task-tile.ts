@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { TaskData } from '../types';
 import { getUrgencyColor, formatDaysRemaining } from '../utils';
+import { formatPart } from '../status-format';
 import { localize } from '../localize/localize';
 import './progress-ring';
 
@@ -48,7 +49,9 @@ export class TaskTile extends LitElement {
     const { task } = this;
     const color = getUrgencyColor(task.urgency);
     const locale = this.hass?.locale?.language ?? this.hass?.language ?? 'en';
-    const daysText = formatDaysRemaining(task.days_remaining, locale, task.task_type);
+    const daysText = task.status_key
+      ? formatPart({ key: task.status_key, vars: task.status_vars }, locale, this.hass)
+      : formatDaysRemaining(task.days_remaining, locale, task.task_type);
     const isOverdue = task.urgency === 'overdue';
 
     if (this.viewMode === 'list') return this._renderList(color, daysText, isOverdue);
@@ -77,6 +80,51 @@ export class TaskTile extends LitElement {
 
   private _shownProgress(): number {
     return Math.max(2, Math.min(100, this.task.progress));
+  }
+
+  private _phrase(key?: string, vars?: Record<string, string | number>): string {
+    if (!key) return '';
+    const locale = this.hass?.locale?.language ?? this.hass?.language;
+    return formatPart({ key, vars }, locale, this.hass);
+  }
+
+  private _ruleLine(): TemplateResult | typeof nothing {
+    const text = this._phrase(this.task.rule_key, this.task.rule_vars);
+    return text ? html`<span class="due">${text}</span>` : nothing;
+  }
+
+  private _tagLine(): TemplateResult | typeof nothing {
+    const text = this._phrase(this.task.tag_key ?? undefined, undefined);
+    return text ? html`<span class="due">${text}</span>` : nothing;
+  }
+
+  private _meterLines(color: string): TemplateResult | typeof nothing {
+    const meters = this.task.meters ?? [];
+    if (meters.length < 2) return nothing;
+    const locale = this.hass?.locale?.language ?? this.hass?.language;
+    return html`
+      ${meters.map(
+        (meter) => html`
+          <span class="due">
+            ${meter.leading ? localize('card.due_first', undefined, locale) : ''}
+            ${formatPart(
+              { key: meter.status_key || '', vars: meter.status_vars },
+              locale,
+              this.hass
+            )}
+          </span>
+          <span class="meter" aria-hidden="true">
+            <span
+              class="meter-fill"
+              style="inline-size:${Math.max(
+                2,
+                Math.min(100, meter.progress ?? 0)
+              )}%;background:${color}"
+            ></span>
+          </span>
+        `
+      )}
+    `;
   }
 
   private _renderRing(color: string): TemplateResult {
@@ -158,7 +206,9 @@ export class TaskTile extends LitElement {
               `}
           <span class="copy">
             <span class="name">${task.name}</span>
+            ${this._ruleLine()}
             <span class="remaining" style="color:${color}">${daysText}</span>
+            ${this._tagLine()} ${this._meterLines(color)}
             ${dueLong ? html`<span class="due due-long">${dueLong}</span>` : nothing}
             ${dueShort ? html`<span class="due due-short">${dueShort}</span>` : nothing}
             ${useRing ? nothing : this._renderMeter(color)}
@@ -184,6 +234,7 @@ export class TaskTile extends LitElement {
           </span>
           <span class="copy">
             <span class="name">${task.name}</span>
+            ${this._ruleLine()}
             <span class="meta">
               <span class="remaining" style="color:${color}">${daysText}</span>
               ${dueLong ? html`<span class="due due-long"> · ${dueLong}</span>` : nothing}
@@ -270,10 +321,12 @@ export class TaskTile extends LitElement {
     }
 
     const urgent = this.task.urgency === 'overdue' || this.task.urgency === 'due_soon';
+    const disabled = this.task.done_enabled === false;
     return html`
       <button
         type="button"
         class="btn btn-done ${urgent ? 'urgent' : ''}"
+        ?disabled=${disabled}
         aria-label=${named}
         @click=${this._handleDone}
       >

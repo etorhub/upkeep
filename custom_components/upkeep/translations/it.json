@@ -45,7 +45,7 @@
   "services": {
     "reset_last_performed": {
       "name": "Reimposta ultima esecuzione",
-      "description": "Reimposta la data dell'ultima esecuzione di un'attività di manutenzione. Alias di complete_task per compatibilità.",
+      "description": "Alias di Completa attività. La data vale per intervalli e calendario.",
       "fields": {
         "entity_id": {
           "name": "ID entità",
@@ -53,13 +53,13 @@
         },
         "performed_date": {
           "name": "Data di esecuzione",
-          "description": "Specifica facoltativamente la data dell'ultima esecuzione."
+          "description": "Data in cui l'attività è stata fatta. Vale per intervalli e calendario."
         }
       }
     },
     "complete_task": {
       "name": "Completa attività",
-      "description": "Segna un'attività di manutenzione come completata (reimposta la data dell'ultima esecuzione).",
+      "description": "Segna un'attività come fatta. Ciò che si azzera dipende dal trigger. La data vale per intervalli e calendario.",
       "fields": {
         "entity_id": {
           "name": "ID entità",
@@ -67,7 +67,7 @@
         },
         "performed_date": {
           "name": "Data di esecuzione",
-          "description": "Specifica facoltativamente la data dell'ultima esecuzione."
+          "description": "Data in cui l'attività è stata fatta. Vale per intervalli e calendario."
         }
       }
     },
@@ -101,7 +101,7 @@
     },
     "increment_counter": {
       "name": "Incrementa contatore",
-      "description": "Incrementa il contatore di utilizzo di un'attività basata sulla frequenza (per esempio i lavaggi della lavastoviglie).",
+      "description": "Aggiunge uno a un'attività a cicli. Gli altri trigger lo ignorano.",
       "fields": {
         "entity_id": {
           "name": "ID entità",
@@ -109,5 +109,11 @@
         }
       }
     }
+  },
+  "notices": {
+    "title": "Upkeep",
+    "due": "{title} è in scadenza",
+    "before": "{title} si avvicina",
+    "reset_failed": "Upkeep non ha potuto azzerare il contatore di vita di {title}"
   }
 }

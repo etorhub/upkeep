@@ -9,7 +9,20 @@ from typing import Any
 
 import voluptuous as vol
 
-TASK_TYPES = ("time", "frequency")
+TASK_TYPES = (
+    "time",
+    "frequency",
+    "interval",
+    "cycle",
+    "either",
+    "usage",
+    "calendar",
+    "idle",
+    "device_life",
+    "condition",
+    "event",
+    "after_task",
+)
 INTERVAL_TYPES = ("days", "weeks", "months")
 NOTIFY_UNITS = ("days", "weeks", "months")
 
@@ -18,6 +31,10 @@ INTERNAL_TASK_FIELDS = (
     "notified_before_due",
     "notified_due_on",
     "notified_frequency_due",
+    "notified_cycle_key",
+    "notified_kinds",
+    "snooze_progress",
+    "snooze_meters",
 )
 
 
@@ -58,6 +75,8 @@ _SETTABLE_FIELDS: dict[Any, Any] = {
     vol.Optional("frequency_target"): vol.Any(None, strict_int),
     vol.Optional("current_count"): strict_int,
     vol.Optional("watched_entity"): _OPTIONAL_TEXT,
+    vol.Optional("trigger"): dict,
+    vol.Optional("state"): dict,
     vol.Optional("notify_when_due"): bool,
     vol.Optional("notify_before"): bool,
     vol.Optional("notify_before_value"): positive_int,
@@ -89,6 +108,8 @@ CREATE_TASK_SCHEMA = vol.Schema(
         vol.Optional("frequency_target"): vol.Any(None, strict_int),
         vol.Optional("current_count", default=0): strict_int,
         vol.Optional("watched_entity"): _OPTIONAL_TEXT,
+        vol.Optional("trigger"): dict,
+        vol.Optional("state"): dict,
         vol.Optional("notify_when_due", default=False): bool,
         vol.Optional("notify_before", default=False): bool,
         vol.Optional("notify_before_value", default=7): positive_int,

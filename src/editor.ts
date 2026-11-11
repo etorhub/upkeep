@@ -99,6 +99,7 @@ export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
           { value: 'overdue', label: this._t('card.overdue') },
           { value: 'due_soon', label: this._t('card.due_soon') },
           { value: 'on_track', label: this._t('card.on_track') },
+          { value: 'unknown', label: this._t('editor.filter_unknown') },
         ]}
         @selected=${this._selectChanged}
       ></ha-select>
@@ -122,6 +123,9 @@ export class UpkeepCardEditor extends LitElement implements LovelaceCardEditor {
         .configValue=${'due_soon_days'}
         @input=${this._numChanged}
       ></ha-textfield>
+      <p style="color:var(--secondary-text-color);font-size:13px;margin:0;">
+        ${this._t('editor.due_soon_days_help')}
+      </p>
     `;
   }
 

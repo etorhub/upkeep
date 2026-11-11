@@ -45,7 +45,7 @@
   "services": {
     "reset_last_performed": {
       "name": "Restableix l'última execució",
-      "description": "Restableix la data de l'última vegada que s'ha fet una tasca de manteniment. Àlies de complete_task per compatibilitat amb versions anteriors.",
+      "description": "Àlies de Completar tasca. La data s'aplica als intervals i al calendari.",
       "fields": {
         "entity_id": {
           "name": "ID de l'entitat",
@@ -53,13 +53,13 @@
         },
         "performed_date": {
           "name": "Data d'execució",
-          "description": "Data en què es va fer la tasca per última vegada, si en vols indicar una."
+          "description": "Data en què es va fer la tasca. La fan servir els intervals i el calendari."
         }
       }
     },
     "complete_task": {
       "name": "Completa la tasca",
-      "description": "Marca una tasca de manteniment com a completada (reinicia la data de l'última execució).",
+      "description": "Marca una tasca com a feta. El que es reinicia depèn de l'avís. La data s'aplica als intervals i al calendari.",
       "fields": {
         "entity_id": {
           "name": "ID de l'entitat",
@@ -67,7 +67,7 @@
         },
         "performed_date": {
           "name": "Data d'execució",
-          "description": "Data en què es va fer la tasca per última vegada, si en vols indicar una."
+          "description": "Data en què es va fer la tasca. La fan servir els intervals i el calendari."
         }
       }
     },
@@ -101,7 +101,7 @@
     },
     "increment_counter": {
       "name": "Incrementa el comptador",
-      "description": "Incrementa el comptador d'ús d'una tasca basada en la freqüència (per exemple, rentades del rentavaixelles).",
+      "description": "Suma un a una tasca de recompte. Els altres avisos ho ignoren.",
       "fields": {
         "entity_id": {
           "name": "ID de l'entitat",
@@ -109,5 +109,11 @@
         }
       }
     }
+  },
+  "notices": {
+    "title": "Upkeep",
+    "due": "{title} està pendent",
+    "before": "{title} s'acosta",
+    "reset_failed": "Upkeep no ha pogut reiniciar el comptador de vida de {title}"
   }
 }

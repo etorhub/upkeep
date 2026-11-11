@@ -1,8 +1,8 @@
 reset_last_performed:
   name: Reset Last Performed
   description: >
-    Resets the 'last_performed' date for a maintenance task entity.
-    Alias for complete_task for backward compatibility.
+    Alias of Complete Task. What resets depends on the due trigger.
+    A performed date applies to time intervals and calendar dates.
     Provide entity_id or task_id.
   fields:
     entity_id:
@@ -21,7 +21,7 @@ reset_last_performed:
         text:
     performed_date:
       name: Performed Date
-      description: Optionally specify the date the task was last performed.
+      description: Date the task was done. Used by time intervals and calendar dates.
       required: false
       example: "2025-06-01"
       selector:
@@ -30,7 +30,8 @@ reset_last_performed:
 complete_task:
   name: Complete Task
   description: >
-    Mark a maintenance task as completed (resets last performed date).
+    Mark a task done. What resets depends on the due trigger.
+    A performed date applies to time intervals and calendar dates.
     Provide entity_id or task_id.
   fields:
     entity_id:
@@ -49,7 +50,7 @@ complete_task:
         text:
     performed_date:
       name: Performed Date
-      description: Optionally specify the date the task was last performed.
+      description: Date the task was done. Used by time intervals and calendar dates.
       required: false
       example: "2025-06-01"
       selector:
@@ -113,7 +114,7 @@ enable_task:
 increment_counter:
   name: Increment Counter
   description: >
-    Increment the usage counter for a frequency-based task (e.g. dishwasher runs).
+    Add one to a cycle-count task. Other due triggers ignore this.
     Provide entity_id or task_id.
   fields:
     entity_id:

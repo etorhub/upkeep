@@ -182,4 +182,57 @@ def persistent_notification_ids(task_id: str) -> tuple[str, ...]:
         f"upkeep_before_{task_id}",
         f"upkeep_due_{task_id}",
         f"upkeep_{task_id}",
+        f"upkeep_reset_failed_{task_id}",
     )
+
+
+def notice_catalog(language: str | None) -> dict[str, str]:
+    """Load the backend notice strings for a language, falling back to English."""
+    import json
+    from pathlib import Path
+
+    directory = Path(__file__).parent / "translations"
+    code = (language or "en").split("-")[0]
+    path = directory / f"{code}.json"
+    if not path.exists():
+        path = directory / "en.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    notices = document.get("notices") or {}
+    return {key: value for key, value in notices.items() if isinstance(value, str)}
+
+
+@dataclass(frozen=True)
+class NoticeDecision:
+    """Whether to send a due or due-soon notice for the current meter cycle."""
+
+    cycle_key: str
+    send_due: bool
+    send_before: bool
+    rearm: bool
+
+
+def evaluate_notice(
+    *,
+    is_due: bool,
+    urgency: str,
+    cycle_key: str,
+    rule_key: str,
+    notify_when_due: bool,
+    notify_before: bool,
+    notified_cycle_key: str | None,
+    notified_kinds: list | None,
+) -> NoticeDecision:
+    """Decide the single notice for this cycle. Latches have no due-soon notice."""
+    same_cycle = notified_cycle_key == cycle_key
+    sent = set(notified_kinds or []) if same_cycle else set()
+    latch = rule_key in {"rule.event_state", "rule.event_bus"}
+    send_due = bool(is_due and notify_when_due and "due" not in sent)
+    send_before = bool(
+        not latch
+        and urgency == "due_soon"
+        and notify_before
+        and "before" not in sent
+        and not send_due
+    )
+    rearm = bool(notified_kinds) and not same_cycle
+    return NoticeDecision(cycle_key, send_due, send_before, rearm)
