@@ -120,7 +120,7 @@ def test_cycle_phrases_and_done() -> None:
     done = meters.apply_done(_task(trigger, {"count": 10, "generation": 2}), _at(2026, 11, 11), TZ)
 
     assert early.status.key == "status.count_of"
-    assert early.status.vars == {"count": 3, "target": 10}
+    assert early.status.vars == {"current": 3, "target": 10}
     assert early.urgency == "on_track"
     assert near.urgency == "due_soon"
     assert near.status.key == "status.count_left"
@@ -338,7 +338,8 @@ def test_usage_progress_reset_and_done() -> None:
     waiting = meters.evaluate(_task(trigger), _at(2026, 11, 11), TZ)
 
     assert result.status.key == "status.usage_of"
-    assert result.status.vars["amount"] == 6.5
+    assert result.status.vars["current"] == 6.5
+    assert result.status.vars["limit"] == 10
     assert result.urgency == "on_track"
     assert near.urgency == "due_soon"
     assert reset["state"]["accumulated"] == 7.5
@@ -557,7 +558,8 @@ def test_after_task_counts_completions_and_a_missing_source() -> None:
     done = meters.apply_done(counted, _at(2026, 11, 11), TZ)
 
     assert early.status.key == "status.after_count"
-    assert early.status.vars["count"] == 1
+    assert early.status.vars["current"] == 1
+    assert early.status.vars["target"] == 4
     assert near.urgency == "due_soon"
     assert near.status.key == "status.after_left"
     assert counted["state"]["count"] == 2

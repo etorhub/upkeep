@@ -763,7 +763,7 @@ def _evaluate_cycle(trigger: dict, state: dict) -> MeterResult:
     else:
         status = StatusPart(
             "status.count_of",
-            {"count": _display_num(count), "target": target},
+            {"current": _display_num(count), "target": target},
         )
         urgency = "on_track"
         is_due = False
@@ -811,7 +811,7 @@ def _evaluate_usage(trigger: dict, state: dict) -> MeterResult:
     else:
         status = StatusPart(
             "status.usage_of",
-            {"amount": _display_num(amount), "threshold": _display_num(threshold), "unit": unit},
+            {"current": _display_num(amount), "limit": _display_num(threshold), "unit": unit},
         )
         urgency = "due_soon" if remaining_ratio <= 0.10 else "on_track"
         is_due = False
@@ -1084,7 +1084,7 @@ def _evaluate_after_task(trigger: dict, state: dict) -> MeterResult:
     else:
         status = StatusPart(
             "status.after_count",
-            {"count": _display_num(count), "every": every, "task_id": task_id},
+            {"current": _display_num(count), "target": every, "task_id": task_id},
         )
         urgency = "on_track"
         is_due = False
