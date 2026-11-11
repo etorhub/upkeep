@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dev/config/
 custom_components/upkeep/www/
 custom_components/upkeep/panel/dist/
 upkeep.zip

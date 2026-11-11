@@ -131,7 +131,7 @@ upkeep/
 
 Releases are created automatically on every push to `main` using [semantic-release](https://github.com/semantic-release/semantic-release). Use [Conventional Commits](https://www.conventionalcommits.org/) for release notes.
 
-CI builds the Lovelace card and sidebar panel, packages them into `upkeep.zip`, and attaches that zip to each GitHub release. HACS installs the integration from that release zip (`zip_release` in `hacs.json`); bundled JavaScript is not committed on `main`. For local development, run `npm run build` before copying `custom_components/upkeep` manually.
+CI builds the Lovelace card and sidebar panel, packages them into `upkeep.zip`, and attaches that zip to each GitHub release. HACS installs the integration from that release zip (`zip_release` in `hacs.json`); bundled JavaScript is not committed on `main`. For local development, run `npm run dev:up` to start Home Assistant with this integration mounted. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
@@ -196,7 +196,12 @@ npx lefthook install
 
 | Command                   | Description                                    |
 | ------------------------- | ---------------------------------------------- |
-| `npm start`               | Dev build with watch + local server on `:5000` |
+| `npm run dev:up`          | Build, then start Home Assistant on `:8124` with this integration mounted |
+| `npm run dev:watch`       | Rebuild the card and panel into the mounted component |
+| `npm run dev:restart`     | Restart Home Assistant after Python edits |
+| `npm run dev:logs`        | Follow the Home Assistant container logs |
+| `npm run dev:down`        | Stop the Home Assistant container |
+| `npm start`               | Card-only dev server on `:5000`; does not load the integration |
 | `npm run build`           | Build card + panel into `dist/` and `custom_components/upkeep/` |
 | `npm run package:integration` | Create `upkeep.zip` for release packaging (CI) |
 | `npm run lint`            | Run ESLint                                     |
@@ -210,11 +215,13 @@ npx lefthook install
 
 ### Local Testing in Home Assistant
 
-1. Run `npm start` to serve the dev build at `http://localhost:5000`.
-2. Add a Lovelace resource:
-   - **URL:** `http://<your-dev-machine-ip>:5000/upkeep-card.js`
-   - **Type:** JavaScript Module
-3. Ensure your dev machine is reachable from the Home Assistant host (same network or port forwarding).
+`npm run dev:up` builds the card and sidebar panel, then starts a Home Assistant container at [http://localhost:8124](http://localhost:8124). The container bind-mounts `custom_components/upkeep`. Its config, auth, and tasks stay in `dev/config/` and are not committed.
+
+1. Open `http://localhost:8124`, finish onboarding, then add **Upkeep** under **Settings → Devices & Services → Add Integration**.
+2. While editing the card or panel, run `npm run dev:watch` and refresh the browser.
+3. After Python edits, run `npm run dev:restart`. Reloading the config entry does not reimport the component.
+
+`npm start` still serves only the card at `http://localhost:5000`. That server does not run the Python integration.
 
 ### Git Hooks (Lefthook)
 

@@ -1,0 +1,13 @@
+name: upkeep-dev
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: upkeep-dev
+    ports:
+      - "8124:8123"
+    volumes:
+      - ./config:/config
+      - ../custom_components/upkeep:/config/custom_components/upkeep
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
