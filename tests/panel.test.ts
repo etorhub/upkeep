@@ -404,10 +404,7 @@ describe('upkeep-panel add form', () => {
         interval_value: 60,
         interval_type: 'weeks',
         notify_before: false,
-        notify_before_value: 7,
-        notify_before_unit: 'days',
         notify_when_due: false,
-        notify_service: null,
       },
     });
     expect((el as any)._formMode).toBe('none');
@@ -452,6 +449,39 @@ describe('upkeep-panel add form', () => {
 
     expect(el.shadowRoot?.querySelector('#task-notify-unit')).toBeNull();
     expect(el.shadowRoot?.querySelector('#task-notify-service')).toBeInstanceOf(HTMLSelectElement);
+  });
+
+  it('omits unused notice fields when saving a task', async () => {
+    const sendMessagePromise = vi.fn((msg: { type: string }) => {
+      if (msg.type === 'upkeep/add_task') return Promise.resolve({ success: true, id: 'dish' });
+      return Promise.resolve([]);
+    });
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    (el as any)._formMode = 'add';
+    (el as any)._draftTitle = 'Netejar rentaplats';
+    (el as any)._draftNotifyBefore = false;
+    (el as any)._draftNotifyBeforeValue = '7';
+    (el as any)._draftNotifyBeforeUnit = 'days';
+    (el as any)._draftNotifyWhenDue = true;
+    (el as any)._draftNotifyService = '';
+
+    await (el as any)._submitAdd();
+
+    const payload = sendMessagePromise.mock.calls.find(
+      (call) => call[0]?.type === 'upkeep/add_task'
+    )?.[0];
+    expect(payload).toMatchObject({
+      notify_before: false,
+      notify_when_due: true,
+    });
+    expect(payload).not.toHaveProperty('notify_before_value');
+    expect(payload).not.toHaveProperty('notify_before_unit');
+    expect(payload).not.toHaveProperty('notify_service');
   });
 
   it('submits the selected notice settings with a new task', async () => {
