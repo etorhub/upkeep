@@ -16,26 +16,66 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 
 ---
 
-## Tech Stack
+## Screenshots
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript&logoColor=white)
-![Lit](https://img.shields.io/badge/Lit-3.3-324FFF?logo=lit&logoColor=white)
-![Rollup](https://img.shields.io/badge/Rollup-4.x-EC4A3F?logo=rollup.js&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-3.x-6E9F18?logo=vitest&logoColor=white)
-![ESLint](https://img.shields.io/badge/ESLint-9.x-4B32C3?logo=eslint&logoColor=white)
-![Prettier](https://img.shields.io/badge/Prettier-3.x-1A2B34?logo=prettier&logoColor=white)
-![Home Assistant](https://img.shields.io/badge/Home_Assistant-Lovelace-41BDF5?logo=home-assistant&logoColor=white)
-![HACS](https://img.shields.io/badge/HACS-Integration-41BDF5)
+<p align="center">
+  <img src="docs/images/hero.png" alt="Upkeep task list on a dashboard, with the same tasks open on a phone" width="860">
+  <br>
+  <sub>Dashboard list, with the sidebar open on a phone. Overdue is red, due soon is amber, on track is green.</sub>
+</p>
 
-| Layer            | Technology                                                                                                                                                               |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **UI**           | [Lit](https://lit.dev/) (Web Components)                                                                                                                                 |
-| **Build**        | [Rollup](https://rollupjs.org/)                                                                                                                                          |
-| **Language**     | [TypeScript](https://www.typescriptlang.org/)                                                                                                                            |
-| **Testing**      | [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)                                                                                          |
-| **Linting**      | [ESLint](https://eslint.org/) + [Prettier](https://prettier.io/)                                                                                                         |
-| **Git Hooks**    | [Lefthook](https://github.com/evilmartians/lefthook)                                                                                                                     |
-| **Dependencies** | [custom-card-helpers](https://github.com/custom-cards/custom-card-helpers), [home-assistant-js-websocket](https://github.com/home-assistant/home-assistant-js-websocket) |
+<p align="center">
+  <img src="docs/images/card-grid.png" alt="Upkeep grid of eight tasks, each due on a different rule, in a dark theme" width="860">
+  <br>
+  <sub>Grid in a dark theme. The tasks are due on a date, a run count, filter hours, humidity, reported filter life, or idle time. One task is snoozed.</sub>
+</p>
+
+<table>
+  <tr>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/images/done.gif" alt="Animation of marking an Upkeep task done from the dashboard card" width="420">
+      <br>
+      <sub>Marking a task done from the card.</sub>
+    </td>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/images/card-light.png" alt="Upkeep card in a light Home Assistant theme, six tasks in a grid" width="420">
+      <br>
+      <sub>Grid in a light theme.</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/images/card-layouts.png" alt="Upkeep list view with status filters beside a compact list of progress percentages" width="860">
+  <br>
+  <sub>List view with status filters, and compact view.</sub>
+</p>
+
+<table>
+  <tr>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/images/panel.png" alt="Upkeep sidebar panel with the dishwasher task open in the editor" width="420">
+      <br>
+      <sub>Sidebar, with a task open for editing.</sub>
+    </td>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/images/mobile.png" alt="Upkeep on three phones: the task list, the task editor, and tasks marked done" width="420">
+      <br>
+      <sub>Phone: list, editor, and completed tasks.</sub>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="280" valign="top" align="center">
+      <img src="docs/images/due-triggers.png" alt="Editor listing the ten ways an Upkeep task can come due, with Cycle count selected" width="260">
+    </td>
+    <td valign="top">
+      <p>Due rule picker, with cycle count selected. A task can be due on a time interval, a calendar date, a cycle count, a usage total, after another task, idle time, device-reported life, a lasting condition, an event, or whichever of two meters comes first.</p>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -243,6 +283,27 @@ Home Assistant MCP can manage these tasks with `ha_call_service` (`return_respon
 ---
 
 ## Development
+
+### Tech stack
+
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript&logoColor=white)
+![Lit](https://img.shields.io/badge/Lit-3.3-324FFF?logo=lit&logoColor=white)
+![Rollup](https://img.shields.io/badge/Rollup-4.x-EC4A3F?logo=rollup.js&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-3.x-6E9F18?logo=vitest&logoColor=white)
+![ESLint](https://img.shields.io/badge/ESLint-9.x-4B32C3?logo=eslint&logoColor=white)
+![Prettier](https://img.shields.io/badge/Prettier-3.x-1A2B34?logo=prettier&logoColor=white)
+![Home Assistant](https://img.shields.io/badge/Home_Assistant-Lovelace-41BDF5?logo=home-assistant&logoColor=white)
+![HACS](https://img.shields.io/badge/HACS-Integration-41BDF5)
+
+| Layer            | Technology                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **UI**           | [Lit](https://lit.dev/) (Web Components)                                                                                                                                 |
+| **Build**        | [Rollup](https://rollupjs.org/)                                                                                                                                          |
+| **Language**     | [TypeScript](https://www.typescriptlang.org/)                                                                                                                            |
+| **Testing**      | [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)                                                                                          |
+| **Linting**      | [ESLint](https://eslint.org/) + [Prettier](https://prettier.io/)                                                                                                         |
+| **Git Hooks**    | [Lefthook](https://github.com/evilmartians/lefthook)                                                                                                                     |
+| **Dependencies** | [custom-card-helpers](https://github.com/custom-cards/custom-card-helpers), [home-assistant-js-websocket](https://github.com/home-assistant/home-assistant-js-websocket) |
 
 ### Setup
 
