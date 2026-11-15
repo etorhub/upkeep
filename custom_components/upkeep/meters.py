@@ -581,6 +581,9 @@ def entity_attributes(task: dict, result: MeterResult) -> dict:
         attributes["tag_vars"] = result.tag.vars
     if task.get("tag_id"):
         attributes["tag_id"] = task["tag_id"]
+    if task.get("last_completed_at"):
+        attributes["last_completed_at"] = task["last_completed_at"]
+        attributes["last_completed_source"] = task.get("last_completed_source")
     if kind == "interval":
         attributes["interval_value"] = trigger.get("every")
         attributes["interval_type"] = trigger.get("unit")

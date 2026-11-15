@@ -2,5 +2,6 @@
   "title": "Upkeep",
   "due": "{title} is due",
   "before": "{title} is coming up",
-  "reset_failed": "Upkeep could not reset the life counter for {title}"
+  "reset_failed": "Upkeep could not reset the life counter for {title}",
+  "nfc_done": "Marked done with an NFC tag: {titles}"
 }

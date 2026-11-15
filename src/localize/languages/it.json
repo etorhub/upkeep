@@ -311,7 +311,12 @@
       "usage": "Totale di utilizzo",
       "calendar": "Data di calendario",
       "idle": "Inutilizzato troppo a lungo"
-    }
+    },
+    "nfc_tag": "Tag NFC",
+    "nfc_scan": "Scansiona tag",
+    "nfc_waiting": "In attesa del tag… tocca per annullare",
+    "nfc_hint": "Scegli un tag da Impostazioni > Tag o scansionane uno ora. Scansionandolo in seguito l'attività viene segnata come fatta.",
+    "nfc_linked": "Collegata a un tag NFC"
   },
   "trigger": {
     "errors": {

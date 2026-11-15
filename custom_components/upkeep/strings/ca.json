@@ -2,5 +2,6 @@
   "title": "Upkeep",
   "due": "{title} està pendent",
   "before": "{title} s'acosta",
-  "reset_failed": "Upkeep no ha pogut reiniciar el comptador de vida de {title}"
+  "reset_failed": "Upkeep no ha pogut reiniciar el comptador de vida de {title}",
+  "nfc_done": "Marcada com a feta amb una etiqueta NFC: {titles}"
 }

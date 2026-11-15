@@ -26,8 +26,10 @@ from .mutations import new_task_from_data, prepare_updates
 from .coordinator import UpkeepCoordinator
 from .entity_watch import setup_entity_watch
 from .frontend import async_register_card
+from .notices import notice_catalog
 from .panel import async_register_panel, async_unregister_panel
 from .store import TaskStore
+from .tags import complete_for_scan
 from .websocket import async_register_websockets
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,23 +54,28 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the Upkeep config entry."""
 
-    @callback
-    def handle_tag_scanned_event(event: Event) -> None:
-        """Handle when a tag is scanned."""
+    async def handle_tag_scanned_event(event: Event) -> None:
+        """Complete the tasks linked to a scanned NFC tag."""
         tag_id = event.data.get("tag_id")
-        if not tag_id:
-            return
         store = hass.data.get(const.DOMAIN, {}).get("store")
-        if not store:
+        if not tag_id or not store:
             return
-        tasks = store.get_by_tag_uuid(tag_id)
-        if not tasks:
-            tasks = store.get_by_tag_id(tag_id)
-        if not tasks:
+        completed = complete_for_scan(store, tag_id, event.data.get("device_id"))
+        if not completed:
             return
-        _LOGGER.debug("Tag scanned: %s", tag_id)
-        for task in tasks:
-            store.update_last_performed(task["id"])
+        _LOGGER.debug("Tag scanned: %s completed %d task(s)", tag_id, len(completed))
+        catalog = notice_catalog(hass.config.language)
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": catalog["title"],
+                "message": catalog["nfc_done"].format(
+                    titles=", ".join(task["title"] for task in completed)
+                ),
+                "notification_id": f"upkeep_nfc_{tag_id}",
+            },
+        )
 
     task_store = TaskStore(hass)
     await task_store.async_load()
@@ -121,8 +128,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not unload_ok:
         return False
 
-    if "unsub_tag_scanned" in hass.data.get(const.DOMAIN, {}):
-        hass.data[const.DOMAIN]["unsub_tag_scanned"]()
+    if unsub_tag := hass.data.get(const.DOMAIN, {}).get("unsub_tag_scanned"):
+        unsub_tag()
 
     if "unsub_entity_watch" in hass.data.get(const.DOMAIN, {}):
         hass.data[const.DOMAIN]["unsub_entity_watch"]()

@@ -89,6 +89,19 @@ export class TaskTile extends LitElement {
     return formatPart({ key, vars }, locale, this.hass);
   }
 
+  private _nfcBadge(): TemplateResult | typeof nothing {
+    if (!this.task.tag_id) return nothing;
+    const locale = this.hass?.locale?.language ?? this.hass?.language;
+    const label = localize('panel.nfc_linked', undefined, locale);
+    return html`<ha-icon
+      class="nfc-badge"
+      icon="mdi:nfc-variant"
+      title=${label}
+      role="img"
+      aria-label=${label}
+    ></ha-icon>`;
+  }
+
   private _ruleLine(): TemplateResult | typeof nothing {
     const text = this._phrase(this.task.rule_key, this.task.rule_vars);
     return text ? html`<span class="due">${text}</span>` : nothing;
@@ -206,7 +219,7 @@ export class TaskTile extends LitElement {
                 </span>
               `}
           <span class="copy">
-            <span class="name">${task.name}</span>
+            <span class="name">${task.name}${this._nfcBadge()}</span>
             ${this._ruleLine()}
             <span class="remaining" style="color:${color}">${daysText}</span>
             ${this._tagLine()} ${this._meterLines(color)}
@@ -234,7 +247,7 @@ export class TaskTile extends LitElement {
             <ha-icon .icon=${task.icon} aria-hidden="true"></ha-icon>
           </span>
           <span class="copy">
-            <span class="name">${task.name}</span>
+            <span class="name">${task.name}${this._nfcBadge()}</span>
             ${this._ruleLine()}
             <span class="meta">
               <span class="remaining" style="color:${color}">${daysText}</span>
@@ -259,7 +272,7 @@ export class TaskTile extends LitElement {
         <div class="icon-wrap compact-icon" style="color: ${color}">
           <ha-icon .icon=${task.icon}></ha-icon>
         </div>
-        <div class="compact-name">${task.name}</div>
+        <div class="compact-name">${task.name}${this._nfcBadge()}</div>
         ${this._renderProgress(color, 32, 3)}
       </div>
     `;
@@ -370,6 +383,12 @@ export class TaskTile extends LitElement {
         flex-direction: column;
         gap: 4px;
         min-inline-size: 0;
+      }
+      .nfc-badge {
+        --mdc-icon-size: 14px;
+        margin-inline-start: 4px;
+        vertical-align: middle;
+        color: var(--secondary-text-color);
       }
       .tile.grid .name,
       .tile.list .name {

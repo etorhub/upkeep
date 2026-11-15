@@ -155,7 +155,7 @@ def websocket_complete_task(
             performed = dt_util.parse_datetime(str(msg["performed_date"]))
             if performed is None:
                 raise ValueError(f"Could not parse date: {msg['performed_date']}")
-        store.update_last_performed(task_id, performed)
+        store.update_last_performed(task_id, performed, source="panel")
     except (RuntimeError, ValueError) as err:
         conn.send_error(msg["id"], "complete_failed", str(err))
         return

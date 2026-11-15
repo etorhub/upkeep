@@ -447,7 +447,7 @@ function renderEither(
   `;
 }
 
-function entityField(
+export function entityField(
   caption: string,
   value: string,
   hass: HomeAssistant | undefined,

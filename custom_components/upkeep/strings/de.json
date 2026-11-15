@@ -2,5 +2,6 @@
   "title": "Upkeep",
   "due": "{title} ist fällig",
   "before": "{title} steht bald an",
-  "reset_failed": "Upkeep konnte den Lebensdauerzähler für {title} nicht zurücksetzen"
+  "reset_failed": "Upkeep konnte den Lebensdauerzähler für {title} nicht zurücksetzen",
+  "nfc_done": "Per NFC-Tag als erledigt markiert: {titles}"
 }
