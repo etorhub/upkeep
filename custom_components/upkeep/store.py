@@ -73,6 +73,8 @@ class UpkeepTask:
     notify_service: str | None = None
     notified_cycle_key: str | None = None
     notified_kinds: list = field(default_factory=list)
+    last_completed_at: str | None = None
+    last_completed_source: str | None = None
 
     def to_dict(self) -> dict:
         """Convert to dict for storage."""
@@ -318,9 +320,18 @@ class TaskStore:
         return self.mutation_result(task_id)
 
     def complete_task(
-        self, task_id: str, performed_date: datetime | None = None
+        self,
+        task_id: str,
+        performed_date: datetime | None = None,
+        source: str = "service",
+        event_data: dict | None = None,
     ) -> None:
-        """Reset this task's meter. The meaning of reset depends on its trigger."""
+        """Reset this task's meter. The meaning of reset depends on its trigger.
+
+        ``source`` records how it was completed ("service", "panel" or "nfc") and
+        is sent with the ``upkeep_task_completed`` event, together with any
+        ``event_data`` (for example the scanned tag).
+        """
         task = self._tasks.get(task_id)
         if task is None or task_id not in self.hass.data[const.DOMAIN]["entities"]:
             raise RuntimeError("Task not found.")
@@ -331,16 +342,32 @@ class TaskStore:
             when = performed_date
         done = apply_done(task.to_dict(), when, self._zone())
         task.state = done["state"]
+        task.last_completed_at = dt_util.now().isoformat()
+        task.last_completed_source = source
         self._record_completion(task_id)
         self._mirror(task)
         self._press_reset(task)
         self._save()
+        self.hass.bus.async_fire(
+            const.EVENT_TASK_COMPLETED,
+            {
+                "task_id": task_id,
+                "title": task.title,
+                "entity_id": self.entity_id_for(task_id),
+                "source": source,
+                **(event_data or {}),
+            },
+        )
 
     def update_last_performed(
-        self, task_id: str, performed_date: datetime | None = None
+        self,
+        task_id: str,
+        performed_date: datetime | None = None,
+        source: str = "service",
+        event_data: dict | None = None,
     ) -> None:
-        """Update a task's last performed date (time-based tasks only)."""
-        self.complete_task(task_id, performed_date)
+        """Complete a task. Kept under its old name for existing callers."""
+        self.complete_task(task_id, performed_date, source, event_data)
 
     def increment_counter(self, task_id: str) -> None:
         """Increment a cycle task. Other trigger types are left unchanged."""

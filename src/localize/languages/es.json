@@ -311,7 +311,12 @@
       "usage": "Total de uso",
       "calendar": "Fecha de calendario",
       "idle": "Sin usar demasiado tiempo"
-    }
+    },
+    "nfc_tag": "Etiqueta NFC",
+    "nfc_scan": "Escanear etiqueta",
+    "nfc_waiting": "Esperando etiqueta… toca para cancelar",
+    "nfc_hint": "Elige una etiqueta de Ajustes > Etiquetas o escanea una ahora. Al escanearla más tarde, la tarea se marca como hecha.",
+    "nfc_linked": "Vinculada a una etiqueta NFC"
   },
   "trigger": {
     "errors": {

@@ -311,7 +311,12 @@
       "usage": "Total d'ús",
       "calendar": "Data de calendari",
       "idle": "Sense usar massa temps"
-    }
+    },
+    "nfc_tag": "Etiqueta NFC",
+    "nfc_scan": "Escaneja l'etiqueta",
+    "nfc_waiting": "Esperant etiqueta… toca per cancel·lar",
+    "nfc_hint": "Tria una etiqueta de Configuració > Etiquetes o escaneja'n una ara. En escanejar-la més tard, la tasca es marca com a feta.",
+    "nfc_linked": "Vinculada a una etiqueta NFC"
   },
   "trigger": {
     "errors": {

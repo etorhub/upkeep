@@ -188,7 +188,7 @@ add_task:
         text:
     tag_id:
       name: Tag ID
-      description: NFC tag entity id that completes this task when scanned.
+      description: Tag entity id (for example tag.garage_door) from Settings > Tags. Scanning that tag completes this task.
       required: false
       selector:
         text:
@@ -332,6 +332,7 @@ update_task:
         text:
     tag_id:
       name: Tag ID
+      description: Tag entity id (for example tag.garage_door). Scanning that tag completes this task. Send an empty value to unlink.
       required: false
       selector:
         text:

@@ -119,7 +119,7 @@ describe('upkeep-panel add form', () => {
     const formButtons = Array.from(el.shadowRoot!.querySelectorAll('.task-form button'))
       .map((node) => node.textContent?.trim())
       .filter(Boolean);
-    expect(formButtons).toEqual(['Time interval', 'Cancel', 'Add Task']);
+    expect(formButtons).toEqual(['Scan tag', 'Time interval', 'Cancel', 'Add Task']);
   });
 
   it('disables submit until the title is filled', async () => {
@@ -407,6 +407,7 @@ describe('upkeep-panel add form', () => {
         title: 'HVAC Filter Updated',
         description: 'New desc',
         icon: 'mdi:air-filter',
+        tag_id: null,
         interval_value: 60,
         interval_type: 'weeks',
         notify_before: false,
@@ -415,6 +416,37 @@ describe('upkeep-panel add form', () => {
     });
     expect((el as any)._formMode).toBe('none');
     expect((el as any)._editingTaskId).toBeNull();
+  });
+
+  it('links and clears an NFC tag when saving an edit', async () => {
+    const task = {
+      id: 'task-1',
+      title: 'Filter',
+      icon: 'mdi:calendar-check',
+      task_type: 'time',
+      interval_value: 90,
+      interval_type: 'days',
+      enabled: true,
+      tag_id: 'tag.garage',
+    };
+    const sendMessagePromise = vi.fn((msg: { type: string }) =>
+      Promise.resolve(msg.type === 'upkeep/get_tasks' ? [task] : { success: true })
+    );
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise },
+    } as unknown as HomeAssistant;
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+
+    (el as any)._startEdit(task);
+    expect((el as any)._draftTagId).toBe('tag.garage');
+    await (el as any)._submitEdit();
+
+    const update = sendMessagePromise.mock.calls
+      .map(([msg]) => msg as { type: string; updates?: Record<string, unknown> })
+      .find((msg) => msg.type === 'upkeep/update_task');
+    expect(update?.updates?.tag_id).toBe('tag.garage');
   });
 
   it('shows the lead period only after the coming-up checkbox, and the service for either notice', async () => {

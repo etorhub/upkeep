@@ -86,9 +86,9 @@ A full [Home Assistant](https://www.home-assistant.io/) integration for recurrin
 - **Task management** — Ten due triggers: time interval, calendar date, cycle count, usage total, after another task, idle time, device-reported life, lasting condition, an event, or whichever of two meters comes first.
 - **Sidebar panel** — Manage tasks from the sidebar: add, edit, complete, snooze.
 - **Binary sensors** — Each task creates a `binary_sensor` entity for automations and dashboards.
-- **NFC support** — Scan a tag to mark a task complete.
+- **NFC support** — Link a Home Assistant tag to a task (Settings > Tags, then the NFC tag field in the task form, or press **Scan tag** and tap it). Scanning the tag marks every linked task done, shows a notification, and records the source. The card shows a small NFC icon on linked tasks.
 - **Entity watching** — Cycle, usage, idle, device life, condition, and event triggers subscribe while the task exists and catch up after a restart.
-- **Events** — Fires `upkeep_task_due` when tasks become due; optional persistent notifications.
+- **Events** — Fires `upkeep_task_due` when tasks become due and `upkeep_task_completed` (`task_id`, `title`, `entity_id`, `source`: `panel`, `service` or `nfc`; plus `tag_id` for scans) when one is done; optional persistent notifications.
 - **Snooze** — Disable tasks temporarily or until a specific date.
 - **Services** — Create, update, and delete tasks from automations or an agent. See [Services](#services).
 
@@ -212,19 +212,19 @@ columns: 3
 
 ### Configuration options
 
-| Option             | Type     | Default           | Description                                            |
-| ------------------ | -------- | ----------------- | ------------------------------------------------------ |
-| `title`            | string   | _(none)_          | Card title displayed at the top                        |
-| `entities`         | string[] | _(auto-discover)_ | Manual list of entity IDs                              |
-| `exclude_entities` | string[] | `[]`              | Entity IDs to exclude from auto-discovery              |
-| `view_mode`        | string   | `grid`            | `grid`, `list`, or `compact`                           |
-| `progress_type`    | string   | `ring`            | `ring` (circular) or `bar` (horizontal)                |
-| `sort_by`          | string   | `urgency`         | `urgency`, `name`, or `due_date`                       |
+| Option             | Type     | Default           | Description                                                       |
+| ------------------ | -------- | ----------------- | ----------------------------------------------------------------- |
+| `title`            | string   | _(none)_          | Card title displayed at the top                                   |
+| `entities`         | string[] | _(auto-discover)_ | Manual list of entity IDs                                         |
+| `exclude_entities` | string[] | `[]`              | Entity IDs to exclude from auto-discovery                         |
+| `view_mode`        | string   | `grid`            | `grid`, `list`, or `compact`                                      |
+| `progress_type`    | string   | `ring`            | `ring` (circular) or `bar` (horizontal)                           |
+| `sort_by`          | string   | `urgency`         | `urgency`, `name`, or `due_date`                                  |
 | `filter`           | string   | `all`             | `all`, `overdue`, `due_soon`, `on_track`, `unknown`, or `snoozed` |
-| `due_soon_days`    | number   | `7`               | Days before a date-based task counts as due soon       |
-| `show_header`      | boolean  | `true`            | Show the summary header with status counts             |
-| `show_filter_bar`  | boolean  | `false`           | Show interactive filter chips                          |
-| `columns`          | number   | `3`               | Number of grid columns (grid mode only)                |
+| `due_soon_days`    | number   | `7`               | Days before a date-based task counts as due soon                  |
+| `show_header`      | boolean  | `true`            | Show the summary header with status counts                        |
+| `show_filter_bar`  | boolean  | `false`           | Show interactive filter chips                                     |
+| `columns`          | number   | `3`               | Number of grid columns (grid mode only)                           |
 
 ### Services
 

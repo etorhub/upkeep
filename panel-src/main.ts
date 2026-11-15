@@ -7,7 +7,8 @@ import { calendarDaysBetween, calendarReady, loadCalendar } from '../src/calenda
 import { formatDaysRemaining, getUrgencyColor } from '../src/utils';
 import { bindSheetLightDismiss } from './light-dismiss';
 import { defaultTrigger } from './triggers/catalog';
-import { renderTriggerFields, validateDraft } from './triggers/fields';
+import { entityField, renderTriggerFields, validateDraft } from './triggers/fields';
+import { listenForTagScan } from './tag-scan';
 import { renderTriggerPicker } from './triggers/picker';
 import { renderPreview, PreviewResult } from './triggers/preview';
 import {
@@ -43,6 +44,9 @@ export class UpkeepPanel extends LitElement {
   @state() private _draftTitle = '';
   @state() private _draftDescription = '';
   @state() private _draftIcon = DEFAULT_ICON;
+  @state() private _draftTagId = '';
+  @state() private _scanningTag = false;
+  private _stopTagScan?: () => void;
   @state() private _draftInterval = '90';
   @state() private _draftPeriod = 'days';
   @state() private _draftTaskType: 'time' | 'frequency' = 'time';
@@ -105,6 +109,7 @@ export class UpkeepPanel extends LitElement {
   }
 
   disconnectedCallback(): void {
+    this._stopTagScan?.();
     this._media?.removeEventListener('change', this._onViewport);
     super.disconnectedCallback();
   }
@@ -634,6 +639,7 @@ export class UpkeepPanel extends LitElement {
               ></textarea>
             </label>
           </div>
+          ${this._renderTagField()}
         </div>
         ${renderTriggerPicker({
           open: this._triggerPickerOpen,
@@ -875,6 +881,7 @@ export class UpkeepPanel extends LitElement {
     this._draftTitle = task.title;
     this._draftDescription = task.description ?? '';
     this._draftIcon = task.icon || DEFAULT_ICON;
+    this._draftTagId = task.tag_id ?? '';
     this._draftTaskType = task.task_type === 'frequency' ? 'frequency' : 'time';
     this._draftTrigger = task.trigger
       ? { ...task.trigger }
@@ -913,6 +920,8 @@ export class UpkeepPanel extends LitElement {
     this._draftTitle = '';
     this._draftDescription = '';
     this._draftIcon = DEFAULT_ICON;
+    this._stopTagScan?.();
+    this._draftTagId = '';
     this._draftInterval = '90';
     this._draftPeriod = 'days';
     this._draftTaskType = 'time';
@@ -941,6 +950,58 @@ export class UpkeepPanel extends LitElement {
     const target = ev.target as HTMLInputElement & { value?: string };
     this._draftDescription = target?.value ?? '';
   };
+
+  private _onTagChanged = (value: string): void => {
+    this._draftTagId = value.trim();
+  };
+
+  private _toggleTagScan = async (): Promise<void> => {
+    if (this._scanningTag) {
+      this._stopTagScan?.();
+      return;
+    }
+    if (!this.hass?.connection) return;
+    this._scanningTag = true;
+    try {
+      this._stopTagScan = await listenForTagScan(
+        this.hass,
+        (value) => {
+          this._draftTagId = value;
+        },
+        () => {
+          this._scanningTag = false;
+          this._stopTagScan = undefined;
+        }
+      );
+    } catch (e) {
+      this._scanningTag = false;
+      this._error = (e as Error).message;
+    }
+  };
+
+  private _renderTagField() {
+    return html`
+      <div class="form-row tag-row">
+        ${entityField(
+          this._t('panel.nfc_tag'),
+          this._draftTagId,
+          this.hass,
+          this._onTagChanged,
+          'tag'
+        )}
+        <button
+          type="button"
+          class="btn btn-secondary tag-scan"
+          aria-pressed=${this._scanningTag}
+          @click=${this._toggleTagScan}
+        >
+          <ha-icon icon="mdi:nfc-variant"></ha-icon>
+          ${this._scanningTag ? this._t('panel.nfc_waiting') : this._t('panel.nfc_scan')}
+        </button>
+        <span class="field-hint">${this._t('panel.nfc_hint')}</span>
+      </div>
+    `;
+  }
 
   private _onIconChanged = (ev: CustomEvent): void => {
     const value = (ev.detail as { value?: string })?.value;
@@ -1105,6 +1166,7 @@ export class UpkeepPanel extends LitElement {
       title,
       description: this._draftDescription.trim() || undefined,
       icon: this._draftIcon,
+      tag_id: this._draftTagId || undefined,
       trigger,
       ...this._noticeUpdates(),
     };
@@ -1131,6 +1193,7 @@ export class UpkeepPanel extends LitElement {
       title,
       description: this._draftDescription.trim() || null,
       icon: this._draftIcon,
+      tag_id: this._draftTagId || null,
       ...this._noticeUpdates(),
     };
 
@@ -1961,6 +2024,28 @@ export class UpkeepPanel extends LitElement {
         background: var(--primary-color);
         color: #102027;
         border-color: var(--primary-color);
+      }
+      .tag-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      .tag-row .form-field-label {
+        flex: 1 1 200px;
+      }
+      .tag-scan {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .tag-scan[aria-pressed='true'] {
+        border-color: var(--primary-color);
+      }
+      .field-hint {
+        flex-basis: 100%;
+        font-size: 12px;
+        color: var(--secondary-text-color);
       }
       .btn {
         border: none;

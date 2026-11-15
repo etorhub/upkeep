@@ -84,6 +84,7 @@ export function buildTaskData(
       urgency: 'snoozed',
       task_type: (taskType ?? 'time') as 'time' | 'frequency',
       assigned_user: attrs.assigned_user,
+      tag_id: attrs.tag_id,
     };
   }
 
@@ -113,6 +114,7 @@ export function buildTaskData(
       urgency,
       task_type: 'frequency',
       assigned_user: attrs.assigned_user,
+      tag_id: attrs.tag_id,
     };
   }
 
@@ -133,6 +135,7 @@ export function buildTaskData(
       urgency: 'overdue',
       task_type: 'time',
       assigned_user: attrs.assigned_user,
+      tag_id: attrs.tag_id,
     };
   }
 
@@ -170,6 +173,7 @@ export function buildTaskData(
     urgency,
     task_type: 'time',
     assigned_user: attrs.assigned_user,
+    tag_id: attrs.tag_id,
   };
 }
 
@@ -213,6 +217,7 @@ function mapPublishedTask(
     done_enabled: attrs.done_enabled !== false,
     meters: Array.isArray(attrs.meters) ? attrs.meters : undefined,
     assigned_user: attrs.assigned_user,
+    tag_id: attrs.tag_id,
   };
 }
 

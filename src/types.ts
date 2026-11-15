@@ -61,4 +61,5 @@ export interface TaskData {
   done_enabled?: boolean;
   meters?: TaskMeter[];
   assigned_user?: string;
+  tag_id?: string;
 }

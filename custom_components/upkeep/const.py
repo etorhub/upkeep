@@ -44,6 +44,9 @@ DEVICE_KEY = "upkeep_hub"
 # Event fired when a task becomes due
 EVENT_TASK_DUE = "upkeep_task_due"
 
+# Event fired when a task is completed, from the panel, a service or an NFC tag
+EVENT_TASK_COMPLETED = "upkeep_task_completed"
+
 # Coordinator poll interval (for due-date checks and event firing)
 COORDINATOR_UPDATE_INTERVAL = 300  # 5 minutes
 

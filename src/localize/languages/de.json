@@ -311,7 +311,12 @@
       "usage": "Verbrauchssumme",
       "calendar": "Kalenderdatum",
       "idle": "Zu lange unbenutzt"
-    }
+    },
+    "nfc_tag": "NFC-Tag",
+    "nfc_scan": "Tag scannen",
+    "nfc_waiting": "Warte auf Tag… zum Abbrechen tippen",
+    "nfc_hint": "Wähle einen Tag unter Einstellungen > Tags oder scanne jetzt einen. Beim späteren Scannen wird die Aufgabe als erledigt markiert.",
+    "nfc_linked": "Mit einem NFC-Tag verknüpft"
   },
   "trigger": {
     "errors": {

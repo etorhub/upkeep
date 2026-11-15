@@ -311,7 +311,12 @@
       "usage": "Total de uso",
       "calendar": "Data de calendário",
       "idle": "Sem uso durante demasiado tempo"
-    }
+    },
+    "nfc_tag": "Etiqueta NFC",
+    "nfc_scan": "Ler etiqueta",
+    "nfc_waiting": "A aguardar etiqueta… toque para cancelar",
+    "nfc_hint": "Escolha uma etiqueta em Definições > Etiquetas ou leia uma agora. Ao lê-la mais tarde, a tarefa é marcada como feita.",
+    "nfc_linked": "Ligada a uma etiqueta NFC"
   },
   "trigger": {
     "errors": {

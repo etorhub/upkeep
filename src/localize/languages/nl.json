@@ -311,7 +311,12 @@
       "usage": "Verbruikstotaal",
       "calendar": "Kalenderdatum",
       "idle": "Te lang ongebruikt"
-    }
+    },
+    "nfc_tag": "NFC-tag",
+    "nfc_scan": "Tag scannen",
+    "nfc_waiting": "Wachten op tag… tik om te annuleren",
+    "nfc_hint": "Kies een tag uit Instellingen > Tags of scan er nu een. Later scannen markeert deze taak als gedaan.",
+    "nfc_linked": "Gekoppeld aan een NFC-tag"
   },
   "trigger": {
     "errors": {
