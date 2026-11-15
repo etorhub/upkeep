@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { localize } from '../src/localize/localize';
+import { upkeepMark } from '../src/brand/upkeep-mark';
 import { formatPart } from '../src/status-format';
 import { calendarDaysBetween, calendarReady, loadCalendar } from '../src/calendar';
 import { formatDaysRemaining, getUrgencyColor } from '../src/utils';
@@ -462,9 +463,12 @@ export class UpkeepPanel extends LitElement {
         @click=${this._onPanelClick}
       >
         <div class="header">
-          <div class="header-copy">
-            <h1>Upkeep</h1>
-            <p class="subtitle">${this._summary()}</p>
+          <div class="header-brand">
+            ${upkeepMark(36)}
+            <div class="header-copy">
+              <h1>Upkeep</h1>
+              <p class="subtitle">${this._summary()}</p>
+            </div>
           </div>
           <button type="button" class="btn btn-header" @click=${() => this._startAdd()}>
             ${this._t('panel.new_task')}
@@ -528,6 +532,7 @@ export class UpkeepPanel extends LitElement {
   private _renderEmpty() {
     if (this._tasks.length === 0 || this._filter === 'all') {
       return html`<div class="empty">
+        <div class="empty-mark">${upkeepMark(72, 40)}</div>
         ${this._t('panel.empty', { add: this._t('panel.new_task') })}
       </div>`;
     }
@@ -1964,6 +1969,12 @@ export class UpkeepPanel extends LitElement {
         gap: 16px;
         margin-bottom: 16px;
       }
+      .header-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
       .header h1 {
         margin: 0;
         font-size: 24px;
@@ -2615,6 +2626,12 @@ export class UpkeepPanel extends LitElement {
         padding: 32px;
         text-align: center;
         color: var(--secondary-text-color);
+      }
+      .empty-mark {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 16px;
+        opacity: 0.55;
       }
       @keyframes popIn {
         0% {

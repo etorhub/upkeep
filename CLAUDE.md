@@ -25,12 +25,16 @@ src/
 ├── const.ts                   # CARD_NAME, DEFAULTS, PROGRESS_THRESHOLDS
 ├── utils.ts                   # discoverEntities, buildTaskData, sortTasks, filterTasks
 ├── styles.ts                  # Shared CSS
+├── brand/                     # Mark component, sidebar icon set, generated paths
 ├── components/
 │   ├── task-tile.ts           # Single task display
 │   ├── summary-header.ts      # Overdue/due soon/on-track counts
 │   └── progress-ring.ts       # Circular or horizontal progress
 └── localize/
     └── languages/             # en, es, ca, fr, de, it, nl, pt
+
+branding/                      # Logo SVGs, wordmark outlines, social preview (npm run build:brand)
+custom_components/upkeep/brand/ # icon/logo PNGs HA and HACS read (committed)
 ```
 
 ## Key Patterns
