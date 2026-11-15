@@ -395,6 +395,16 @@ def test_calendar_dst_preset_finds_a_transition() -> None:
     assert nxt.month == 3
 
 
+def test_calendar_month_day_validation_requires_rule() -> None:
+    yearly = {"type": "calendar", "rule": "month_day", "month": 12, "day": 25, "repeat": "year"}
+    monthly = {"type": "calendar", "rule": "month_day", "day": 1, "repeat": "month"}
+    missing_rule = {"type": "calendar", "month": 12, "day": 25, "repeat": "year"}
+
+    assert meters.validate_trigger(yearly) == []
+    assert meters.validate_trigger(monthly) == []
+    assert meters.validate_trigger(missing_rule) == ["trigger.errors.calendar"]
+
+
 def test_idle_resets_when_the_device_runs_and_counts_downtime() -> None:
     trigger = {
         "type": "idle",
