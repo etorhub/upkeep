@@ -14,6 +14,7 @@ export class TaskTile extends LitElement {
   @property({ attribute: false }) task!: TaskData;
   @property({ type: String }) progressType: 'ring' | 'bar' = 'ring';
   @property({ type: String }) viewMode: 'grid' | 'list' | 'compact' = 'grid';
+  @property({ type: String }) language?: string;
 
   @state() private _confirming = false;
   @state() private _done = false;
@@ -49,7 +50,7 @@ export class TaskTile extends LitElement {
   protected render(): TemplateResult {
     const { task } = this;
     const color = getUrgencyColor(task.urgency);
-    const locale = this.hass?.locale?.language ?? this.hass?.language ?? 'en';
+    const locale = this._locale();
     const daysText = task.status_key
       ? formatPart({ key: task.status_key, vars: task.status_vars }, locale, this.hass)
       : formatDaysRemaining(task.days_remaining, locale, task.task_type);
@@ -60,8 +61,12 @@ export class TaskTile extends LitElement {
     return this._renderGrid(color, daysText, isOverdue);
   }
 
+  private _locale(): string {
+    return this.language || this.hass?.locale?.language || this.hass?.language || 'en';
+  }
+
   private _localeTag(): string {
-    return (this.hass?.locale?.language ?? this.hass?.language ?? 'en').replaceAll('_', '-');
+    return this._locale().replaceAll('_', '-');
   }
 
   private _dueLabel(withWeekday: boolean): string | null {
@@ -75,7 +80,7 @@ export class TaskTile extends LitElement {
       month: 'short',
       year: 'numeric',
     }).format(task.next_due);
-    const locale = this.hass?.locale?.language ?? this.hass?.language;
+    const locale = this._locale();
     return withWeekday ? localize('panel.due_on', { date }, locale) : date;
   }
 
@@ -85,13 +90,12 @@ export class TaskTile extends LitElement {
 
   private _phrase(key?: string, vars?: Record<string, string | number>): string {
     if (!key) return '';
-    const locale = this.hass?.locale?.language ?? this.hass?.language;
-    return formatPart({ key, vars }, locale, this.hass);
+    return formatPart({ key, vars }, this._locale(), this.hass);
   }
 
   private _nfcBadge(): TemplateResult | typeof nothing {
     if (!this.task.tag_id) return nothing;
-    const locale = this.hass?.locale?.language ?? this.hass?.language;
+    const locale = this._locale();
     const label = localize('panel.nfc_linked', undefined, locale);
     return html`<ha-icon
       class="nfc-badge"
@@ -115,7 +119,7 @@ export class TaskTile extends LitElement {
   private _meterLines(color: string): TemplateResult | typeof nothing {
     const meters = this.task.meters ?? [];
     if (meters.length < 2) return nothing;
-    const locale = this.hass?.locale?.language ?? this.hass?.language;
+    const locale = this._locale();
     return html`
       ${meters.map(
         (meter) => html`
@@ -300,7 +304,7 @@ export class TaskTile extends LitElement {
   }
 
   private _renderDoneButton(): TemplateResult {
-    const locale = this.hass?.locale?.language ?? this.hass?.language;
+    const locale = this._locale();
     const label = localize('card.mark_done', undefined, locale);
     const named = `${label}: ${this.task.name}`;
     if (this._done) {

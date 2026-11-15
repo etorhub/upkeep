@@ -3,8 +3,13 @@
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.selector import TimeSelector
+from homeassistant.helpers.selector import (
+    LanguageSelector,
+    LanguageSelectorConfig,
+    TimeSelector,
+)
 
+from .language import SUPPORTED_LANGUAGES, configured_language
 from .schemas import (
     ADD_TASK_SERVICE_SCHEMA,
     COMPLETE_TASK_SCHEMA,
@@ -81,14 +86,34 @@ SERVICE_INCREMENT_COUNTER_SCHEMA = INCREMENT_COUNTER_SCHEMA
 SERVICE_SNOOZE_TASK_SCHEMA = SNOOZE_TASK_SCHEMA
 SERVICE_ENABLE_TASK_SCHEMA = ENABLE_TASK_SCHEMA
 
-CONFIG_STEP_USER_DATA_SCHEMA = vol.Schema(
-    {
-        vol.Optional("admin_only", default=False): cv.boolean,
-        vol.Optional("sidebar_title", default=PANEL_TITLE): cv.string,
-        vol.Optional("sidebar_icon", default=PANEL_ICON): cv.string,
-        vol.Optional("notify_time", default=DEFAULT_NOTIFY_TIME): TimeSelector(),
-    }
-)
+def _language_selector() -> LanguageSelector:
+    """Return a language picker limited to Upkeep catalogs."""
+    return LanguageSelector(
+        LanguageSelectorConfig(
+            languages=list(SUPPORTED_LANGUAGES),
+            native_name=True,
+        )
+    )
+
+
+def get_user_schema(hass_language: str | None = None) -> vol.Schema:
+    """Return the schema for the initial config flow step."""
+    return vol.Schema(
+        {
+            vol.Optional("admin_only", default=False): cv.boolean,
+            vol.Optional("sidebar_title", default=PANEL_TITLE): cv.string,
+            vol.Optional("sidebar_icon", default=PANEL_ICON): cv.string,
+            vol.Optional(
+                "language",
+                default=configured_language(None, hass_language),
+            ): _language_selector(),
+            vol.Optional("notify_time", default=DEFAULT_NOTIFY_TIME): TimeSelector(),
+        }
+    )
+
+
+# Kept for imports that still expect a module-level schema.
+CONFIG_STEP_USER_DATA_SCHEMA = get_user_schema()
 
 
 def get_options_schema(config_entry: ConfigEntry) -> vol.Schema:
@@ -113,6 +138,10 @@ def get_options_schema(config_entry: ConfigEntry) -> vol.Schema:
                 default=sidebar_icon(config_entry),
             ): cv.string,
             vol.Optional(
+                "language",
+                default=configured_language(config_entry),
+            ): _language_selector(),
+            vol.Optional(
                 "notify_time",
                 default=config_entry.options.get(
                     "notify_time",
@@ -129,3 +158,15 @@ def sidebar_icon(config_entry) -> str:
         "sidebar_icon", config_entry.data.get("sidebar_icon", PANEL_ICON)
     )
     return PANEL_ICON if icon == LEGACY_PANEL_ICON else icon
+
+
+def entry_language(hass, config_entry: ConfigEntry | None = None) -> str:
+    """Return the configured Upkeep language for the running Home Assistant."""
+    entry = config_entry
+    if entry is None:
+        entry_id = hass.data.get(DOMAIN, {}).get("entry_id")
+        entry = hass.config_entries.async_get_entry(entry_id) if entry_id else None
+        if entry is None:
+            entries = hass.config_entries.async_entries(DOMAIN)
+            entry = entries[0] if entries else None
+    return configured_language(entry, getattr(hass.config, "language", None))

@@ -153,7 +153,7 @@ class UpkeepCoordinator(DataUpdateCoordinator[None]):
         service = task.get("notify_service") or "persistent_notification"
         if isinstance(service, str) and service.startswith("notify."):
             service = service[len("notify.") :]
-        catalog = notice_catalog(getattr(self.hass.config, "language", None))
+        catalog = notice_catalog(const.entry_language(self.hass))
         title = task.get("title", "")
         message = catalog.get(kind, notice_message(title, kind=kind))
         if "{title}" in message:

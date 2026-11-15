@@ -64,7 +64,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not completed:
             return
         _LOGGER.debug("Tag scanned: %s completed %d task(s)", tag_id, len(completed))
-        catalog = notice_catalog(hass.config.language)
+        catalog = notice_catalog(const.entry_language(hass, entry))
         await hass.services.async_call(
             "persistent_notification",
             "create",

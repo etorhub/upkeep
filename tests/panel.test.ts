@@ -73,6 +73,28 @@ describe('upkeep-panel add form', () => {
     ).toEqual(['Totes 0', 'Vençudes 0', 'Properes 0', 'Al dia 0', 'Desconegudes 0', 'Ajornades 0']);
   });
 
+  it('uses the configured Upkeep language over Home Assistant language', async () => {
+    const hass = {
+      language: 'en',
+      locale: { language: 'en' },
+      states: {},
+      connection: {
+        sendMessagePromise: async (msg: { type: string }) => {
+          if (msg.type === 'upkeep/get_config') {
+            return { options: { language: 'ca', notify_time: '08:00' }, data: {} };
+          }
+          return [];
+        },
+      },
+    } as unknown as HomeAssistant;
+
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    await (el as any).updateComplete;
+    await (el as any).updateComplete;
+
+    expect(el.shadowRoot?.querySelector('.btn-header')?.textContent?.trim()).toBe('Nova tasca');
+  });
+
   it('renders period input as native select', async () => {
     const hass = {
       states: {},

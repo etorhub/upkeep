@@ -451,7 +451,7 @@ class TaskStore:
                 )
             except Exception as err:
                 _LOGGER.warning("Upkeep reset button failed for %s: %s", task.id, err)
-                catalog = notice_catalog(getattr(self.hass.config, "language", None))
+                catalog = notice_catalog(const.entry_language(self.hass))
                 message = catalog.get("reset_failed", "Reset failed for {title}").format(
                     title=task.title
                 )

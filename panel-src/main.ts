@@ -58,6 +58,7 @@ export class UpkeepPanel extends LitElement {
   @state() private _draftNotifyWhenDue = false;
   @state() private _draftNotifyService = '';
   @state() private _notifyTime = '08:00';
+  @state() private _language: string | null = null;
   @state() private _openMenuId: string | null = null;
   @state() private _iconPickerOpen = false;
   @state() private _completingIds: string[] = [];
@@ -94,7 +95,7 @@ export class UpkeepPanel extends LitElement {
     });
     if (this.hass?.connection) {
       this._loadTasks();
-      this._loadNotifyTime();
+      this._loadConfig();
     }
   }
 
@@ -168,18 +169,20 @@ export class UpkeepPanel extends LitElement {
     this._loadTasks({ silent: true });
   }
 
-  private _loadNotifyTime(): void {
+  private _loadConfig(): void {
     if (!this.hass?.connection) return;
     this.hass.connection
       .sendMessagePromise({ type: 'upkeep/get_config' })
       .then((result: unknown) => {
         if (!result || typeof result !== 'object' || Array.isArray(result)) return;
         const entry = result as {
-          options?: { notify_time?: string };
-          data?: { notify_time?: string };
+          options?: { notify_time?: string; language?: string };
+          data?: { notify_time?: string; language?: string };
         };
         const raw = entry.options?.notify_time || entry.data?.notify_time || '08:00';
         this._notifyTime = String(raw).slice(0, 5);
+        const language = entry.options?.language || entry.data?.language;
+        this._language = typeof language === 'string' && language ? language : null;
       })
       .catch(() => undefined);
   }
@@ -244,7 +247,7 @@ export class UpkeepPanel extends LitElement {
   }
 
   private _locale(): string {
-    return this.hass?.locale?.language ?? this.hass?.language ?? 'en';
+    return this._language || this.hass?.locale?.language || this.hass?.language || 'en';
   }
 
   private _t(key: string, vars?: Record<string, string | number>): string {
