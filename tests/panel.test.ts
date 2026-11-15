@@ -365,6 +365,128 @@ describe('upkeep-panel add form', () => {
     expect(el.shadowRoot?.querySelector('.empty')).not.toBeNull();
   });
 
+  it.each(['days', 'weeks', 'months'])(
+    'preserves a stored %s interval when editing and saving a task',
+    async (unit) => {
+      const task = {
+        id: 'task-1',
+        title: 'Replace filter',
+        task_type: 'time',
+        trigger: { type: 'interval', every: 6, unit },
+        state: { last_performed: '2026-08-01' },
+        enabled: true,
+      };
+      const sendMessagePromise = vi.fn((msg: { type: string }) => {
+        if (msg.type === 'upkeep/get_tasks') return Promise.resolve([task]);
+        if (msg.type === 'upkeep/update_task') return Promise.resolve({ success: true });
+        return Promise.resolve(undefined);
+      });
+      const hass = {
+        states: {},
+        connection: { sendMessagePromise },
+      } as unknown as HomeAssistant;
+
+      const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+      await (el as any).updateComplete;
+      (el.shadowRoot!.querySelector('.task-open') as HTMLButtonElement).click();
+      await (el as any).updateComplete;
+
+      expect((el.shadowRoot!.querySelector('#task-interval') as HTMLInputElement).value).toBe('6');
+      const selected = el.shadowRoot!.querySelector<HTMLInputElement>(
+        'input[name="period"]:checked'
+      );
+      expect(selected?.value).toBe(unit);
+
+      el.shadowRoot!.querySelector('form.task-form')!.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true })
+      );
+      await vi.waitFor(() => {
+        expect(sendMessagePromise).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: 'upkeep/update_task',
+            task_id: 'task-1',
+            updates: expect.objectContaining({ interval_value: 6, interval_type: unit }),
+          })
+        );
+      });
+    }
+  );
+
+  it('prefers the current trigger interval over legacy fields when editing', async () => {
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise: async () => [] },
+    } as unknown as HomeAssistant;
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    (el as any)._startEdit({
+      id: 'task-1',
+      title: 'Replace filter',
+      task_type: 'time',
+      interval_value: 10,
+      interval_type: 'days',
+      trigger: { type: 'interval', every: 6, unit: 'months' },
+      enabled: true,
+    });
+    await (el as any).updateComplete;
+
+    expect((el.shadowRoot!.querySelector('#task-interval') as HTMLInputElement).value).toBe('6');
+    expect(
+      el.shadowRoot!.querySelector<HTMLInputElement>('input[name="period"]:checked')?.value
+    ).toBe('months');
+  });
+
+  it('loads the legacy interval fields when a task has no trigger', async () => {
+    const hass = {
+      states: {},
+      connection: { sendMessagePromise: async () => [] },
+    } as unknown as HomeAssistant;
+    const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+    (el as any)._startEdit({
+      id: 'task-1',
+      title: 'Replace filter',
+      task_type: 'time',
+      interval_value: 4,
+      interval_type: 'weeks',
+      enabled: true,
+    });
+    await (el as any).updateComplete;
+
+    expect((el.shadowRoot!.querySelector('#task-interval') as HTMLInputElement).value).toBe('4');
+    expect(
+      el.shadowRoot!.querySelector<HTMLInputElement>('input[name="period"]:checked')?.value
+    ).toBe('weeks');
+  });
+
+  it('previews the due date and days remaining from the stored completion date', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 15, 12));
+    try {
+      const task = {
+        id: 'task-1',
+        title: 'Replace filter',
+        task_type: 'time',
+        trigger: { type: 'interval', every: 6, unit: 'months' },
+        state: { last_performed: '2026-08-01' },
+        enabled: true,
+      };
+      const hass = {
+        language: 'en',
+        states: {},
+        connection: { sendMessagePromise: async () => [task] },
+      } as unknown as HomeAssistant;
+      const el = await fixture<HTMLElement>(html`<upkeep-panel .hass=${hass}></upkeep-panel>`);
+      await (el as any).updateComplete;
+      (el.shadowRoot!.querySelector('.task-open') as HTMLButtonElement).click();
+      await (el as any).updateComplete;
+
+      const preview = el.shadowRoot!.querySelector('.schedule-preview')?.textContent;
+      expect(preview).toContain('Feb 1, 2027');
+      expect(preview).toContain('78 days');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('submits update_task when saving edit form', async () => {
     const task = {
       id: 'task-1',

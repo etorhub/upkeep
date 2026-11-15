@@ -344,8 +344,11 @@ export class UpkeepPanel extends LitElement {
   private _previewAnchor(): Date {
     if (this._formMode === 'edit') {
       const task = this._tasks.find((item) => item.id === this._editingTaskId);
-      if (task?.last_performed) {
-        const parsed = new Date(task.last_performed);
+      const lastPerformed = task?.state?.last_performed || task?.last_performed;
+      if (lastPerformed) {
+        const parsed = new Date(
+          /^\d{4}-\d{2}-\d{2}$/.test(lastPerformed) ? `${lastPerformed}T00:00:00` : lastPerformed
+        );
         if (!Number.isNaN(parsed.getTime())) {
           return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
         }
@@ -365,7 +368,7 @@ export class UpkeepPanel extends LitElement {
       unit: this._unitWord(this._draftPeriod, value),
     });
     const dueLabel = this._t('panel.due_on', { date: this._formatDate(due) });
-    const remaining = formatDaysRemaining(calendarDaysBetween(anchor, due), this._locale());
+    const remaining = formatDaysRemaining(calendarDaysBetween(new Date(), due), this._locale());
     return `${every}. ${dueLabel} · ${remaining}`;
   }
 
@@ -904,8 +907,9 @@ export class UpkeepPanel extends LitElement {
             every: task.interval_value ?? 90,
             unit: task.interval_type ?? 'days',
           };
-    this._draftInterval = String(task.interval_value ?? task.trigger?.every ?? 90);
-    this._draftPeriod = task.interval_type ?? 'days';
+    const intervalTrigger = task.trigger?.type === 'interval' ? task.trigger : undefined;
+    this._draftInterval = String(intervalTrigger?.every ?? task.interval_value ?? 90);
+    this._draftPeriod = intervalTrigger?.unit ?? task.interval_type ?? 'days';
     this._draftFrequencyTarget = String(task.frequency_target ?? 10);
     this._draftNotifyBefore = task.task_type !== 'frequency' && Boolean(task.notify_before);
     this._draftNotifyBeforeValue = String(task.notify_before_value ?? 7);
