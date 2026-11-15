@@ -24,7 +24,28 @@ export function validateDraft(trigger: Trigger, editingId: string | null): strin
     if (!trigger.unit) return 'trigger.errors.unit';
     return null;
   }
-  if (kind === 'calendar') return null;
+  if (kind === 'calendar') {
+    const rule = String(trigger.rule || '');
+    if (rule === 'month_day') {
+      if (trigger.repeat !== 'year' && trigger.repeat !== 'month') return 'trigger.errors.repeat';
+      if (trigger.repeat === 'year') {
+        const month = numberValue(trigger.month);
+        if (month < 1 || month > 12) return 'trigger.errors.month';
+      }
+      const day = numberValue(trigger.day);
+      return day >= 1 && day <= 31 ? null : 'trigger.errors.day';
+    }
+    return [
+      'dst_forward',
+      'dst_back',
+      'season_spring',
+      'season_summer',
+      'season_autumn',
+      'season_winter',
+    ].includes(rule)
+      ? null
+      : 'trigger.errors.calendar';
+  }
   if (kind === 'idle') {
     if (!trigger.entity_id) return 'trigger.errors.entity';
     const limit = (trigger.limit as Trigger) || {};
@@ -212,9 +233,14 @@ function renderCalendar(
         : String(trigger.rule || 'season_spring');
   return html`
     ${selectField('preset', label('panel.field.preset'), selected, presets, label, (value) => {
-      if (value === 'monthly') set({ rule: undefined, repeat: 'month', day: trigger.day || 1 });
+      if (value === 'monthly') set({ rule: 'month_day', repeat: 'month', day: trigger.day || 1 });
       else if (value === 'yearly')
-        set({ rule: undefined, repeat: 'year', month: trigger.month || 1, day: trigger.day || 1 });
+        set({
+          rule: 'month_day',
+          repeat: 'year',
+          month: trigger.month || 1,
+          day: trigger.day || 1,
+        });
       else set({ rule: value, repeat: undefined, hemisphere: trigger.hemisphere || 'north' });
     })}
     ${String(selected).startsWith('season')
