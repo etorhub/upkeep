@@ -7,10 +7,10 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResu
 from homeassistant.core import callback
 
 from .const import (
-    CONFIG_STEP_USER_DATA_SCHEMA,
     DOMAIN,
     NAME,
     get_options_schema,
+    get_user_schema,
 )
 
 
@@ -28,7 +28,8 @@ class HomeMaintenanceConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is None:
             return self.async_show_form(
-                step_id="user", data_schema=CONFIG_STEP_USER_DATA_SCHEMA
+                step_id="user",
+                data_schema=get_user_schema(self.hass.config.language),
             )
 
         new_id = secrets.token_hex(6)

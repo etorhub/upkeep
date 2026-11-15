@@ -174,6 +174,17 @@ export class HomeMaintenanceCard extends LitElement {
   }
 
   private _locale(): string {
+    if (this._config) {
+      const entityIds = discoverEntities(
+        this.hass,
+        this._config.entities,
+        this._config.exclude_entities
+      );
+      for (const entityId of entityIds) {
+        const language = this.hass?.states?.[entityId]?.attributes?.upkeep_language;
+        if (typeof language === 'string' && language) return language;
+      }
+    }
     return this.hass?.locale?.language ?? this.hass?.language ?? 'en';
   }
 
@@ -299,6 +310,7 @@ export class HomeMaintenanceCard extends LitElement {
               .task=${task}
               .progressType=${progressType}
               .viewMode=${viewMode}
+              .language=${this._locale()}
             ></upkeep-task-tile>
           `
         )}

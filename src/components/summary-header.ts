@@ -10,12 +10,13 @@ import { localize } from '../localize/localize';
 export class SummaryHeader extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) tasks: TaskData[] = [];
+  @property({ type: String }) language?: string;
 
   protected render(): TemplateResult {
     const overdue = this.tasks.filter((t) => t.urgency === 'overdue').length;
     const dueSoon = this.tasks.filter((t) => t.urgency === 'due_soon').length;
     const onTrack = this.tasks.filter((t) => t.urgency === 'on_track').length;
-    const lang = this.hass?.locale?.language ?? this.hass?.language;
+    const lang = this.language || this.hass?.locale?.language || this.hass?.language;
 
     return html`
       <div class="header">

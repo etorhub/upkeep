@@ -9,13 +9,15 @@
           "admin_only": "Nur Administratoren",
           "sidebar_title": "Titel der Seitenleiste",
           "sidebar_icon": "Symbol der Seitenleiste",
-          "notify_time": "Benachrichtigungszeit"
+          "notify_time": "Benachrichtigungszeit",
+          "language": "Sprache"
         },
         "data_description": {
           "admin_only": "Wenn aktiviert, sehen nur Administratoren Upkeep in der Seitenleiste. Deaktivieren, um es allen Benutzern anzuzeigen.",
           "sidebar_title": "Name in der linken Seitenleiste.",
           "sidebar_icon": "MDI-Symbol für den Seitenleisteneintrag (zum Beispiel mdi:hammer-wrench).",
-          "notify_time": "Ortszeit, zu der Hinweise vor und bei Fälligkeit gesendet werden."
+          "notify_time": "Ortszeit, zu der Hinweise vor und bei Fälligkeit gesendet werden.",
+          "language": "Sprache für das Upkeep-Panel, die Karte und die Hinweise."
         }
       }
     },
@@ -31,13 +33,15 @@
           "admin_only": "Nur Administratoren",
           "sidebar_title": "Titel der Seitenleiste",
           "sidebar_icon": "Symbol der Seitenleiste",
-          "notify_time": "Benachrichtigungszeit"
+          "notify_time": "Benachrichtigungszeit",
+          "language": "Sprache"
         },
         "data_description": {
           "admin_only": "Wenn aktiviert, sehen nur Administratoren Upkeep in der Seitenleiste. Deaktivieren, um es allen Benutzern anzuzeigen.",
           "sidebar_title": "Name in der linken Seitenleiste.",
           "sidebar_icon": "MDI-Symbol für den Seitenleisteneintrag (zum Beispiel mdi:hammer-wrench).",
-          "notify_time": "Ortszeit, zu der Hinweise vor und bei Fälligkeit gesendet werden."
+          "notify_time": "Ortszeit, zu der Hinweise vor und bei Fälligkeit gesendet werden.",
+          "language": "Sprache für das Upkeep-Panel, die Karte und die Hinweise."
         }
       }
     }

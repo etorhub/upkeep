@@ -77,7 +77,9 @@ class UpkeepSensor(BinarySensorEntity):
         zone = getattr(self.hass.config, "time_zone", None) or "UTC"
         result = evaluate(self.task, dt_util.now(), zone, 7)
         self._attr_is_on = result.is_due
-        self._attr_extra_state_attributes = entity_attributes(self.task, result)
+        attributes = entity_attributes(self.task, result)
+        attributes["upkeep_language"] = const.entry_language(self.hass)
+        self._attr_extra_state_attributes = attributes
 
     async def async_update(self) -> None:
         """Get the latest state of the sensor."""
