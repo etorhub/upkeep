@@ -35,8 +35,18 @@ CARD_URL_BASE = "/upkeep_lovelace"
 LEGACY_CARD_URL_BASE = "/upkeep"
 PANEL_API_PATH = "/upkeep_static"
 PANEL_API_URL = PANEL_API_PATH + "/main.js"
+# Registers the "upkeep:" icon set so the sidebar can show the brand mark. It is
+# loaded on every Home Assistant page, because the sidebar renders before the
+# panel module is ever requested.
+ICONS_FILENAME = "panel/dist/upkeep-icons.js"
+ICONS_API_URL = PANEL_API_PATH + "/upkeep-icons.js"
 PANEL_TITLE = NAME
-PANEL_ICON = "mdi:hammer-wrench"
+PANEL_ICON = "upkeep:logo"
+# Fallback when the brand icon set is not available.
+PANEL_ICON_FALLBACK = "mdi:home-roof"
+# Default shipped before the brand mark. Entries that still store it never
+# picked an icon themselves, so they move to the new default.
+LEGACY_PANEL_ICON = "mdi:hammer-wrench"
 PANEL_NAME = "upkeep-panel"
 
 DEVICE_KEY = "upkeep_hub"
@@ -100,10 +110,7 @@ def get_options_schema(config_entry: ConfigEntry) -> vol.Schema:
             ): cv.string,
             vol.Optional(
                 "sidebar_icon",
-                default=config_entry.options.get(
-                    "sidebar_icon",
-                    config_entry.data.get("sidebar_icon", PANEL_ICON),
-                ),
+                default=sidebar_icon(config_entry),
             ): cv.string,
             vol.Optional(
                 "notify_time",
@@ -114,3 +121,11 @@ def get_options_schema(config_entry: ConfigEntry) -> vol.Schema:
             ): TimeSelector(),
         }
     )
+
+
+def sidebar_icon(config_entry) -> str:
+    """Return the sidebar icon chosen for an entry, upgrading the legacy default."""
+    icon = config_entry.options.get(
+        "sidebar_icon", config_entry.data.get("sidebar_icon", PANEL_ICON)
+    )
+    return PANEL_ICON if icon == LEGACY_PANEL_ICON else icon

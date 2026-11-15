@@ -9,13 +9,16 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import (
+    ICONS_API_URL,
+    ICONS_FILENAME,
     PANEL_API_PATH,
     PANEL_API_URL,
     PANEL_FILENAME,
-    PANEL_ICON,
+    PANEL_ICON_FALLBACK,
     PANEL_NAME,
     PANEL_TITLE,
     PANEL_URL,
+    sidebar_icon as resolve_sidebar_icon,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,9 +48,20 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
     sidebar_title = entry.options.get(
         "sidebar_title", entry.data.get("sidebar_title", PANEL_TITLE)
     )
-    sidebar_icon = entry.options.get(
-        "sidebar_icon", entry.data.get("sidebar_icon", PANEL_ICON)
-    )
+    sidebar_icon = resolve_sidebar_icon(entry)
+
+    icons_file = Path(__file__).parent / ICONS_FILENAME
+    if icons_file.is_file():
+        if not hass.data.setdefault("upkeep_icons_registered", False):
+            frontend.add_extra_js_url(hass, ICONS_API_URL)
+            hass.data["upkeep_icons_registered"] = True
+    elif sidebar_icon.startswith("upkeep:"):
+        _LOGGER.warning(
+            "Upkeep icon set missing (%s); using %s in the sidebar",
+            icons_file,
+            PANEL_ICON_FALLBACK,
+        )
+        sidebar_icon = PANEL_ICON_FALLBACK
 
     await panel_custom.async_register_panel(
         hass,
@@ -64,4 +78,6 @@ async def async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
 def async_unregister_panel(hass: HomeAssistant) -> None:
     """Remove custom panel for Upkeep."""
     frontend.async_remove_panel(hass, PANEL_URL)
+    if hass.data.pop("upkeep_icons_registered", False):
+        frontend.remove_extra_js_url(hass, ICONS_API_URL)
     _LOGGER.debug("Removing panel")

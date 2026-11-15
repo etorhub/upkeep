@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 4 256 256" role="img" aria-label="Upkeep">
+  <title>Upkeep</title>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="28">
+    <path d="M36 114 L128 40 L220 114" stroke="#eef3f4"/>
+    <path d="M62 136 V158 A66 66 0 0 0 194 158 V136" stroke="#11a387" stroke-opacity="0.28"/>
+    <path d="M62 136 V158 A66 66 0 0 0 194 158 V136" stroke="#11a387" pathLength="100" stroke-dasharray="64 100"/>
+  </g>
+</svg>

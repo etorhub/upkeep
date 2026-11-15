@@ -35,4 +35,13 @@ export default [
     plugins: plugins(true),
     onwarn,
   },
+  {
+    input: 'src/brand/icons.ts',
+    output: {
+      file: 'custom_components/upkeep/panel/dist/upkeep-icons.js',
+      format: 'es',
+    },
+    plugins: plugins(),
+    onwarn,
+  },
 ];

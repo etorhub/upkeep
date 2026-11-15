@@ -21,8 +21,8 @@ import './components/progress-ring';
 
 console.info(
   `%c UPKEEP \n%c ${localize('common.version')} ${CARD_VERSION} `,
-  'color: orange; font-weight: bold; background: black',
-  'color: white; font-weight: bold; background: dimgray'
+  'color: #11a387; font-weight: bold; background: #111418',
+  'color: #eef3f4; font-weight: bold; background: #17303a'
 );
 
 interface WindowWithCustomCards extends Window {

@@ -1,4 +1,9 @@
-# Upkeep
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="branding/logo-dark.svg">
+    <img src="branding/logo.svg" alt="Upkeep" height="96">
+  </picture>
+</h1>
 
 A full [Home Assistant](https://www.home-assistant.io/) integration for recurring maintenance tasks, with a sidebar panel for management and a Lovelace card for dashboards. Replaces the unmaintained [TJPoorman/home_maintenance](https://github.com/TJPoorman/home_maintenance) integration.
 
@@ -135,7 +140,7 @@ If you use **YAML mode** for Lovelace and added the card resource manually, use 
 After you add the Upkeep integration, a **sidebar panel** is registered automatically. You do not add it from **Settings → Dashboards** like a Lovelace view.
 
 1. Complete **Settings → Devices & Services → Add Integration → Upkeep** (or use the HACS install flow above).
-2. Look for **Upkeep** in the left sidebar (default icon: hammer-wrench).
+2. Look for **Upkeep** in the left sidebar (default icon: the Upkeep roof mark).
 3. Or open `https://<your-home-assistant>/upkeep` directly in the browser (bookmarking and refreshing this URL is supported).
 
 To change visibility or labeling, go to **Settings → Devices & Services → Upkeep → Configure**:

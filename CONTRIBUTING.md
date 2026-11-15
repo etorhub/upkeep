@@ -37,6 +37,16 @@ logger:
     custom_components.upkeep: debug
 ```
 
+## Brand
+
+The mark is a roof over a «u» that fills as a task comes due. Everything derives from `branding/`:
+
+- `branding/generate.py` turns the Outfit SemiBold wordmark and the one-ink sidebar icon into outlines (`branding/paths.json`). Run it only when the mark or wordmark changes; it needs `fonttools` and `skia-pathops`.
+- `npm run build:brand` writes the SVGs in `branding/`, the PNGs Home Assistant and HACS read from `custom_components/upkeep/brand/` (`icon`, `dark_icon`, `logo`, `dark_logo`, each with an `@2x`), and `src/brand/paths.ts`. It needs Playwright (`npm install --no-save playwright`). The outputs are committed.
+- The sidebar shows the mark through the `upkeep:` icon set (`src/brand/icons.ts`, built to `panel/dist/upkeep-icons.js`). The panel draws it inline with `src/brand/upkeep-mark.ts`.
+- Colors: accent `#11a387`, ink `#17303a` on light and `#eef3f4` on dark. Outfit is licensed under the SIL OFL (`branding/LICENSE-Outfit.txt`).
+- `branding/social-preview.png` is for GitHub **Settings → Social preview**, which cannot be set from the repo.
+
 ## Adding Translations
 
 User-facing copy lives in three catalogs, and every supported language must stay complete:
