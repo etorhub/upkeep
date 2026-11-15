@@ -43,11 +43,25 @@ def test_interval_day_zero_is_on_track() -> None:
     assert fresh.progress == 0
     assert fresh.urgency == "on_track"
     assert fresh.status.key == "status.in_months_on_date"
+    assert fresh.status.vars["count"] == 3
     assert fresh.is_due is False
     assert fresh.tag is None
     assert near_term.status.key == "status.days_left"
     assert near_term.status.vars["count"] == 23
     assert near_term.urgency == "on_track"
+
+
+def test_long_month_interval_status_count_matches_interval() -> None:
+    """Regression for #50: /30 rounding used to show 36 for a 35-month interval."""
+    task = _task(
+        {"type": "interval", "every": 35, "unit": "months"},
+        {"last_performed": "2026-11-15", "generation": 0},
+    )
+    fresh = meters.evaluate(task, _at(2026, 11, 15), TZ)
+
+    assert fresh.status.key == "status.in_months_on_date"
+    assert fresh.status.vars["count"] == 35
+    assert fresh.rule.vars["count"] == 35
 
 
 def test_interval_due_soon_and_overdue() -> None:

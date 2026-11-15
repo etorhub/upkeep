@@ -49,6 +49,8 @@ SEASONS_SOUTH = {
     "season_winter": (6, 1),
 }
 MONTH_DAYS = 60
+# Average Gregorian month length. Using 30 drifts past ~34 months (35 → 36).
+AVG_MONTH_DAYS = 365.25 / 12
 UPKEEP_SCHEMA = 2
 
 LEGACY_SCHEDULE_FIELDS = (
@@ -1102,6 +1104,11 @@ def _evaluate_after_task(trigger: dict, state: dict) -> MeterResult:
     )
 
 
+def _approx_months(span_days: int) -> int:
+    """Whole months for status copy; average month length avoids /30 drift past ~34 months."""
+    return max(1, round(span_days / AVG_MONTH_DAYS))
+
+
 def _from_due_date(
     trigger: dict,
     now: datetime,
@@ -1122,7 +1129,10 @@ def _from_due_date(
     if days_remaining <= 0:
         overdue_days = abs(days_remaining)
         if overdue_days > MONTH_DAYS:
-            status = StatusPart("status.overdue_months", {"count": max(1, round(overdue_days / 30)), "date": due.isoformat()})
+            status = StatusPart(
+                "status.overdue_months",
+                {"count": _approx_months(overdue_days), "date": due.isoformat()},
+            )
         else:
             status = StatusPart("status.overdue_days", {"count": overdue_days})
         return _pack(
@@ -1143,7 +1153,7 @@ def _from_due_date(
     if days_remaining > MONTH_DAYS:
         status = StatusPart(
             "status.in_months_on_date",
-            {"count": max(1, round(days_remaining / 30)), "date": due.isoformat()},
+            {"count": _approx_months(days_remaining), "date": due.isoformat()},
         )
     elif include_date:
         status = StatusPart("status.in_days_on_date", {"count": days_remaining, "date": due.isoformat()})
