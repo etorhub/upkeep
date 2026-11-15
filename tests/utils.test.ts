@@ -72,6 +72,27 @@ describe('discoverEntities', () => {
     expect(ids).toContain('binary_sensor.task2');
   });
 
+  it('discovers calendar and counter tasks that lack interval attributes', () => {
+    const bare = (id: string, extra: Record<string, unknown>) => ({
+      entity_id: id,
+      state: 'off',
+      attributes: { friendly_name: id, upkeep_schema: 2, ...extra },
+    });
+    const hass = mockHass({
+      'binary_sensor.itv': bare('binary_sensor.itv', {
+        task_type: 'time',
+        trigger_type: 'calendar',
+      }),
+      'binary_sensor.washer': bare('binary_sensor.washer', {
+        task_type: 'frequency',
+        trigger_type: 'cycle',
+        frequency_target: 10,
+        current_count: 2,
+      }),
+    }) as any;
+    expect(discoverEntities(hass).sort()).toEqual(['binary_sensor.itv', 'binary_sensor.washer']);
+  });
+
   it('returns manual entities when provided', () => {
     const hass = mockHass({
       'binary_sensor.task1': mockHassEntity({ entity_id: 'binary_sensor.task1' }),

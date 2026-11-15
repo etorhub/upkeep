@@ -87,7 +87,13 @@ class UpkeepSensor(BinarySensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Run when entity is added to Home Assistant."""
+        registry = er.async_get(self.hass)
+        entry = registry.async_get(self.entity_id)
+        if entry is None:
+            return
+        # A stale registry name overrides the title and makes the card and the
+        # panel disagree; the task title is the source of truth.
+        if entry.name and entry.name != self.task["title"]:
+            registry.async_update_entity(self.entity_id, name=self.task["title"])
         if self._labels:
-            registry = er.async_get(self.hass)
-            if registry.async_get(self.entity_id):
-                registry.async_update_entity(self.entity_id, labels=set(self._labels))
+            registry.async_update_entity(self.entity_id, labels=set(self._labels))
